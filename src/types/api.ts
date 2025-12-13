@@ -125,6 +125,7 @@ export interface Task {
   created_at: string;
   requires_action: boolean;
   proposal_data?: Record<string, unknown>;
+  is_archived?: boolean;
 }
 
 export interface TaskActionRequest {

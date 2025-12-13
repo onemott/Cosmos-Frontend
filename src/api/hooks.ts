@@ -222,14 +222,21 @@ export const useDocuments = (documentType?: string) => {
 };
 
 // Tasks
-export const useTasks = (status?: string) => {
+export const useTasks = (status?: string, isArchived?: boolean) => {
   return useQuery({
-    queryKey: ['tasks', status],
+    queryKey: ['tasks', status, isArchived],
     queryFn: async () => {
-      const params = status ? { status } : {};
+      const params: any = {};
+      if (status) params.status = status;
+      if (isArchived !== undefined) params.is_archived = isArchived;
+      
       const response = await apiClient.get<Task[]>('/client/tasks', { params });
       return response.data;
     },
+    // Auto-refresh every 30 seconds to catch EAM updates
+    refetchInterval: 30000,
+    // Consider data stale after 10 seconds
+    staleTime: 10000,
   });
 };
 
@@ -241,6 +248,9 @@ export const useTaskDetail = (taskId: string) => {
       return response.data;
     },
     enabled: !!taskId,
+    // Auto-refresh every 30 seconds
+    refetchInterval: 30000,
+    staleTime: 10000,
   });
 };
 
@@ -262,6 +272,19 @@ export const useDeclineTask = () => {
   return useMutation({
     mutationFn: async ({ taskId, comment }: { taskId: string; comment: string }) => {
       const response = await apiClient.post(`/client/tasks/${taskId}/decline`, { comment });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+};
+
+export const useArchiveTask = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      const response = await apiClient.post(`/client/tasks/${taskId}/archive`);
       return response.data;
     },
     onSuccess: () => {

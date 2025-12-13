@@ -5,6 +5,17 @@ import { ENV } from '../config/env';
 const TOKEN_KEY = 'cosmos_access_token';
 const REFRESH_TOKEN_KEY = 'cosmos_refresh_token';
 
+// Auth state listener - will be set by AuthContext
+let onAuthFailedCallback: (() => void) | null = null;
+
+export const setAuthFailedCallback = (callback: () => void) => {
+  onAuthFailedCallback = callback;
+};
+
+export const clearAuthFailedCallback = () => {
+  onAuthFailedCallback = null;
+};
+
 export const apiClient = axios.create({
   baseURL: ENV.API_BASE_URL,
   timeout: ENV.API_TIMEOUT,
@@ -57,10 +68,14 @@ apiClient.interceptors.response.use(
 
       // If already refreshing, wait for the new token
       if (isRefreshing) {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           subscribeTokenRefresh((newToken: string) => {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            resolve(apiClient(originalRequest));
+            if (newToken) {
+              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+              resolve(apiClient(originalRequest));
+            } else {
+              reject(error);
+            }
           });
         });
       }
@@ -91,9 +106,15 @@ apiClient.interceptors.response.use(
         isRefreshing = false;
         onRefreshFailed();
         
-        // Refresh failed, clear tokens
+        // Refresh failed, clear tokens and notify AuthContext
         await SecureStore.deleteItemAsync(TOKEN_KEY);
         await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+        
+        // Notify AuthContext that auth has failed
+        if (onAuthFailedCallback) {
+          onAuthFailedCallback();
+        }
+        
         return Promise.reject(refreshError);
       }
     }
@@ -118,5 +139,24 @@ export const tokenStorage = {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
   },
+  
+  /**
+   * Validate token by making a test request.
+   * Returns true if authenticated, false if not.
+   */
+  async validateToken(): Promise<boolean> {
+    try {
+      const token = await SecureStore.getItemAsync(TOKEN_KEY);
+      if (!token) {
+        return false;
+      }
+      
+      // Make a lightweight request to validate the token
+      const response = await apiClient.get('/client/auth/me');
+      return response.status === 200;
+    } catch (error) {
+      // If 401 and refresh also failed, tokens are already cleared
+      return false;
+    }
+  },
 };
-

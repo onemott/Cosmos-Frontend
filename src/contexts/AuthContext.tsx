@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { tokenStorage } from '../api/client';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { tokenStorage, setAuthFailedCallback, clearAuthFailedCallback } from '../api/client';
 import { useLogin, useLogout, useClientProfile } from '../api/hooks';
 import type { ClientProfile } from '../types/api';
 
@@ -16,19 +16,69 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const isValidatingRef = useRef(false);
 
   const loginMutation = useLogin();
   const logoutMutation = useLogout();
   const { data: user, isLoading: isLoadingProfile, refetch } = useClientProfile(isAuthenticated);
 
-  // Check if user is already logged in on mount
+  // Handle auth failure from API client (token refresh failed)
+  const handleAuthFailed = useCallback(() => {
+    console.log('[AuthContext] Auth failed - logging out');
+    setIsAuthenticated(false);
+  }, []);
+
+  // Register auth failed callback on mount
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = await tokenStorage.getAccessToken();
-      setIsAuthenticated(!!token);
-      setIsInitializing(false);
+    setAuthFailedCallback(handleAuthFailed);
+    return () => {
+      clearAuthFailedCallback();
     };
-    checkAuth();
+  }, [handleAuthFailed]);
+
+  // Validate token on mount - not just check existence
+  useEffect(() => {
+    const validateAuth = async () => {
+      // Prevent duplicate validation
+      if (isValidatingRef.current) return;
+      isValidatingRef.current = true;
+
+      try {
+        const token = await tokenStorage.getAccessToken();
+        
+        if (!token) {
+          console.log('[AuthContext] No token found');
+          setIsAuthenticated(false);
+          setIsInitializing(false);
+          return;
+        }
+
+        console.log('[AuthContext] Token found, validating...');
+        
+        // Validate token by making a request
+        const isValid = await tokenStorage.validateToken();
+        
+        if (isValid) {
+          console.log('[AuthContext] Token is valid');
+          setIsAuthenticated(true);
+        } else {
+          console.log('[AuthContext] Token is invalid or expired');
+          // Clear invalid tokens
+          await tokenStorage.clearTokens();
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error('[AuthContext] Error validating auth:', error);
+        // On any error, assume not authenticated
+        await tokenStorage.clearTokens();
+        setIsAuthenticated(false);
+      } finally {
+        setIsInitializing(false);
+        isValidatingRef.current = false;
+      }
+    };
+
+    validateAuth();
   }, []);
 
   // Refetch user profile when authenticated
@@ -45,7 +95,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [loginMutation]);
 
   const logout = useCallback(async () => {
-    await logoutMutation.mutateAsync();
+    try {
+      await logoutMutation.mutateAsync();
+    } catch (error) {
+      // Ignore logout errors - we're logging out anyway
+      console.log('[AuthContext] Logout request failed, clearing local state');
+    }
+    await tokenStorage.clearTokens();
     setIsAuthenticated(false);
   }, [logoutMutation]);
 
@@ -65,4 +121,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
