@@ -1,12 +1,12 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import ProfileScreen from '../screens/profile/ProfileScreen';
-import type { ProfileStackParamList } from './types';
+import CRMScreen from '../screens/crm/CRMScreen';
+import type { CRMStackParamList } from './types';
 import { colors } from '../config/theme';
 
-const Stack = createNativeStackNavigator<ProfileStackParamList>();
+const Stack = createNativeStackNavigator<CRMStackParamList>();
 
-export default function ProfileStack() {
+export default function CRMStack() {
   return (
     <Stack.Navigator
       screenOptions={{
@@ -21,9 +21,9 @@ export default function ProfileStack() {
       }}
     >
       <Stack.Screen
-        name="ProfileScreen"
-        component={ProfileScreen}
-        options={{ title: 'Profile' }}
+        name="CRMHome"
+        component={CRMScreen}
+        options={{ title: 'My Hub' }}
       />
     </Stack.Navigator>
   );

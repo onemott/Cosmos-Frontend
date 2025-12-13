@@ -11,6 +11,8 @@ import type {
   Document,
   Task,
   ClientModule,
+  ProductRequestCreate,
+  ProductRequestResponse,
 } from '../types/api';
 
 // Auth - Client endpoints
@@ -291,6 +293,24 @@ export const useRequestModuleAccess = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientModules'] });
+    },
+  });
+};
+
+// Product Request (Allocation Lab)
+export const useSubmitProductRequest = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: ProductRequestCreate) => {
+      const response = await apiClient.post<ProductRequestResponse>(
+        '/client/tasks/product-request',
+        request
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate tasks so they refresh with the new request
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 };

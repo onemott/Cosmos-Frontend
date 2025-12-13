@@ -17,13 +17,13 @@ export interface ClientProfile {
   tenant_id: string;
   email: string;
   is_active: boolean;
-  client: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    risk_profile: string;
-  };
+  client_name: string;
+  last_login_at?: string;
+  mfa_enabled: boolean;
+  created_at: string;
+  // Extended from backend joins (if available)
+  tenant_name?: string;
+  risk_profile?: string;
 }
 
 // Portfolio
@@ -118,10 +118,12 @@ export interface Task {
   title: string;
   description: string;
   task_type: string;
+  status: string;
   workflow_state: string;
   priority: string;
   due_date: string | null;
   created_at: string;
+  requires_action: boolean;
   proposal_data?: Record<string, unknown>;
 }
 
@@ -174,5 +176,25 @@ export interface CartItem {
 export interface OrderSubmission {
   items: { productId: string; notes?: string }[];
   clientNotes: string;
+}
+
+// Product Request (Allocation Lab submission)
+export interface ProductRequestItem {
+  product_id: string;
+  product_name: string;
+  module_code: string;
+  min_investment: number;
+  currency: string;
+}
+
+export interface ProductRequestCreate {
+  products: ProductRequestItem[];
+  client_notes?: string;
+}
+
+export interface ProductRequestResponse {
+  task_id: string;
+  message: string;
+  products_count: number;
 }
 

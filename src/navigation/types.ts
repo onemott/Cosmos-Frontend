@@ -10,9 +10,8 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   Home: NavigatorScreenParams<HomeStackParamList>;
   Accounts: NavigatorScreenParams<AccountsStackParamList>;
-  Products: NavigatorScreenParams<ProductsStackParamList>;
-  Documents: NavigatorScreenParams<DocumentsStackParamList>;
-  Tasks: NavigatorScreenParams<TasksStackParamList>;
+  Lab: NavigatorScreenParams<LabStackParamList>;
+  CRM: NavigatorScreenParams<CRMStackParamList>;
   Profile: NavigatorScreenParams<ProfileStackParamList>;
 };
 
@@ -25,18 +24,12 @@ export type AccountsStackParamList = {
   AccountDetail: { accountId: string; accountName: string };
 };
 
-export type ProductsStackParamList = {
-  ProductsList: undefined;
+export type LabStackParamList = {
+  AllocationLab: undefined;
 };
 
-export type DocumentsStackParamList = {
-  DocumentsList: undefined;
-  DocumentViewer: { documentId: string; documentName: string };
-};
-
-export type TasksStackParamList = {
-  TasksList: undefined;
-  TaskDetail: { taskId: string };
+export type CRMStackParamList = {
+  CRMHome: undefined;
 };
 
 export type ProfileStackParamList = {
@@ -64,18 +57,13 @@ export type AccountsStackScreenProps<T extends keyof AccountsStackParamList> = C
   BottomTabScreenProps<MainTabParamList>
 >;
 
-export type ProductsStackScreenProps<T extends keyof ProductsStackParamList> = CompositeScreenProps<
-  NativeStackScreenProps<ProductsStackParamList, T>,
+export type LabStackScreenProps<T extends keyof LabStackParamList> = CompositeScreenProps<
+  NativeStackScreenProps<LabStackParamList, T>,
   BottomTabScreenProps<MainTabParamList>
 >;
 
-export type DocumentsStackScreenProps<T extends keyof DocumentsStackParamList> = CompositeScreenProps<
-  NativeStackScreenProps<DocumentsStackParamList, T>,
-  BottomTabScreenProps<MainTabParamList>
->;
-
-export type TasksStackScreenProps<T extends keyof TasksStackParamList> = CompositeScreenProps<
-  NativeStackScreenProps<TasksStackParamList, T>,
+export type CRMStackScreenProps<T extends keyof CRMStackParamList> = CompositeScreenProps<
+  NativeStackScreenProps<CRMStackParamList, T>,
   BottomTabScreenProps<MainTabParamList>
 >;
 
@@ -86,11 +74,8 @@ export type ProfileStackScreenProps<T extends keyof ProfileStackParamList> = Com
 
 // Typed navigation props for useNavigation hook
 export type AccountsNavigationProp = NativeStackNavigationProp<AccountsStackParamList>;
-export type DocumentsNavigationProp = NativeStackNavigationProp<DocumentsStackParamList>;
-export type TasksNavigationProp = NativeStackNavigationProp<TasksStackParamList>;
+export type LabNavigationProp = NativeStackNavigationProp<LabStackParamList>;
+export type CRMNavigationProp = NativeStackNavigationProp<CRMStackParamList>;
 
 // Typed route props for useRoute hook
 export type AccountDetailRouteProp = RouteProp<AccountsStackParamList, 'AccountDetail'>;
-export type DocumentViewerRouteProp = RouteProp<DocumentsStackParamList, 'DocumentViewer'>;
-export type TaskDetailRouteProp = RouteProp<TasksStackParamList, 'TaskDetail'>;
-

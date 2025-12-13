@@ -18,7 +18,7 @@ export const GradientCard: React.FC<GradientCardProps> = ({
   variant = 'dark',
   style 
 }) => {
-  const gradientColors = colors.gradients[variant];
+  const gradientColors = colors.gradients[variant] as [string, string];
 
   return (
     <Box

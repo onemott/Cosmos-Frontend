@@ -24,6 +24,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../config/theme';
 import { formatCurrency } from '../../utils/format';
 import { useCart } from '../../contexts/CartContext';
+import { useSubmitProductRequest } from '../../api/hooks';
+import type { ProductRequestItem } from '../../types/api';
 
 interface CartSheetProps {
   visible: boolean;
@@ -34,8 +36,8 @@ interface CartSheetProps {
 export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
   const { items, removeFromCart, clearCart, getCartSummary } = useCart();
   const [clientNotes, setClientNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  
+  const submitMutation = useSubmitProductRequest();
   const { totalMinInvestment } = getCartSummary();
 
   const handleSubmit = async () => {
@@ -44,22 +46,35 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
       return;
     }
 
-    setIsSubmitting(true);
+    // Build request payload
+    const products: ProductRequestItem[] = items.map((item) => ({
+      product_id: item.product.id,
+      product_name: item.product.name,
+      module_code: item.product.moduleCode,
+      min_investment: item.product.minInvestment,
+      currency: item.product.currency,
+    }));
+
     try {
-      // TODO: Call backend API to submit order
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      const result = await submitMutation.mutateAsync({
+        products,
+        client_notes: clientNotes || undefined,
+      });
+      
+      // Success!
       onSubmit(clientNotes);
       clearCart();
       setClientNotes('');
+      
       Alert.alert(
         'Request Submitted',
-        'Your investment request has been sent to your EAM for review.',
+        result.message,
         [{ text: 'OK', onPress: onClose }]
       );
-    } catch (error) {
-      Alert.alert('Error', 'Failed to submit request. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    } catch (error: any) {
+      console.error('Submit error:', error);
+      const message = error.response?.data?.detail || 'Failed to submit request. Please try again.';
+      Alert.alert('Error', message);
     }
   };
 
@@ -168,7 +183,7 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
                 variant="outline"
                 borderColor={colors.border}
                 onPress={onClose}
-                disabled={isSubmitting}
+                disabled={submitMutation.isPending}
               >
                 <ButtonText color={colors.textSecondary}>Cancel</ButtonText>
               </Button>
@@ -176,11 +191,11 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
                 flex={2}
                 bg={colors.primary}
                 onPress={handleSubmit}
-                disabled={items.length === 0 || isSubmitting}
-                opacity={items.length === 0 || isSubmitting ? 0.5 : 1}
+                disabled={items.length === 0 || submitMutation.isPending}
+                opacity={items.length === 0 || submitMutation.isPending ? 0.5 : 1}
               >
                 <ButtonText color="white">
-                  {isSubmitting ? 'Submitting...' : 'Submit to EAM'}
+                  {submitMutation.isPending ? 'Submitting...' : 'Submit to EAM'}
                 </ButtonText>
               </Button>
             </HStack>
@@ -231,4 +246,3 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
 });
-

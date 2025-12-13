@@ -3,9 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import HomeStack from './HomeStack';
 import AccountsStack from './AccountsStack';
-import ProductsStack from './ProductsStack';
-import DocumentsStack from './DocumentsStack';
-import TasksStack from './TasksStack';
+import LabStack from './LabStack';
+import CRMStack from './CRMStack';
 import ProfileStack from './ProfileStack';
 import type { MainTabParamList } from './types';
 import { colors } from '../config/theme';
@@ -24,12 +23,10 @@ export default function MainTabs() {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Accounts') {
             iconName = focused ? 'wallet' : 'wallet-outline';
-          } else if (route.name === 'Products') {
+          } else if (route.name === 'Lab') {
             iconName = focused ? 'flask' : 'flask-outline';
-          } else if (route.name === 'Documents') {
-            iconName = focused ? 'document-text' : 'document-text-outline';
-          } else if (route.name === 'Tasks') {
-            iconName = focused ? 'checkmark-circle' : 'checkmark-circle-outline';
+          } else if (route.name === 'CRM') {
+            iconName = focused ? 'briefcase' : 'briefcase-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
           } else {
@@ -48,11 +45,9 @@ export default function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeStack} />
       <Tab.Screen name="Accounts" component={AccountsStack} />
-      <Tab.Screen name="Products" component={ProductsStack} options={{ title: 'Lab' }} />
-      <Tab.Screen name="Documents" component={DocumentsStack} />
-      <Tab.Screen name="Tasks" component={TasksStack} />
+      <Tab.Screen name="Lab" component={LabStack} />
+      <Tab.Screen name="CRM" component={CRMStack} options={{ title: 'Hub' }} />
       <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );
 }
-

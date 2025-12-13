@@ -87,7 +87,7 @@ export default function LoginScreen() {
               {/* Header */}
               <VStack space="sm" alignItems="center" marginBottom="$8">
                 <LinearGradient
-                  colors={colors.gradients.primary}
+                  colors={colors.gradients.primary as [string, string]}
                   style={styles.logoContainer}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
@@ -182,7 +182,7 @@ export default function LoginScreen() {
                 marginTop="$4"
               >
                 <LinearGradient
-                   colors={colors.gradients.primary}
+                   colors={colors.gradients.primary as [string, string]}
                    start={{ x: 0, y: 0 }}
                    end={{ x: 1, y: 0 }}
                    style={styles.buttonGradient}
