@@ -151,8 +151,10 @@ export interface Product {
   id: string;
   moduleCode: string;
   name: string;
+  nameZh?: string;
   description: string;
-  assetClass: string;
+  descriptionZh?: string;
+  assetClass: string;  // Maps from 'category' in API
   riskLevel: 'low' | 'medium' | 'high';
   minInvestment: number;
   currency: string;
@@ -163,9 +165,37 @@ export interface Product {
 export interface ProductModule {
   code: string;
   name: string;
+  nameZh?: string;
   description: string;
+  descriptionZh?: string;
   isEnabled: boolean; // Client has access
   products: Product[];
+}
+
+// API Response Types (snake_case from backend)
+export interface ClientProductApiResponse {
+  id: string;
+  code: string;
+  name: string;
+  name_zh?: string;
+  description?: string;
+  description_zh?: string;
+  category: string;
+  risk_level: string;
+  min_investment: number;
+  currency: string;
+  expected_return?: string;
+  tags: string[];
+}
+
+export interface ClientProductModuleApiResponse {
+  code: string;
+  name: string;
+  name_zh?: string;
+  description?: string;
+  description_zh?: string;
+  is_enabled: boolean;
+  products: ClientProductApiResponse[];
 }
 
 export interface CartItem {

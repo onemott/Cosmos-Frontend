@@ -13,6 +13,10 @@ import type {
   ClientModule,
   ProductRequestCreate,
   ProductRequestResponse,
+  ProductModule,
+  Product,
+  ClientProductModuleApiResponse,
+  ClientProductApiResponse,
 } from '../types/api';
 
 // Auth - Client endpoints
@@ -335,6 +339,89 @@ export const useSubmitProductRequest = () => {
       // Invalidate tasks so they refresh with the new request
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
+  });
+};
+
+// ============================================================================
+// Products (Allocation Lab)
+// ============================================================================
+
+/**
+ * Map backend risk_level to frontend riskLevel
+ */
+const mapRiskLevel = (riskLevel: string): 'low' | 'medium' | 'high' => {
+  switch (riskLevel.toLowerCase()) {
+    case 'conservative':
+      return 'low';
+    case 'moderate':
+    case 'balanced':
+      return 'medium';
+    case 'growth':
+    case 'aggressive':
+      return 'high';
+    default:
+      return 'medium';
+  }
+};
+
+/**
+ * Transform API product response to frontend Product type
+ */
+const transformProduct = (apiProduct: ClientProductApiResponse, moduleCode: string): Product => ({
+  id: apiProduct.id,
+  moduleCode,
+  name: apiProduct.name,
+  nameZh: apiProduct.name_zh,
+  description: apiProduct.description || '',
+  descriptionZh: apiProduct.description_zh,
+  assetClass: apiProduct.category,
+  riskLevel: mapRiskLevel(apiProduct.risk_level),
+  minInvestment: apiProduct.min_investment,
+  currency: apiProduct.currency,
+  expectedReturn: apiProduct.expected_return || '',
+  tags: apiProduct.tags || [],
+});
+
+/**
+ * Transform API module response to frontend ProductModule type
+ */
+const transformProductModule = (apiModule: ClientProductModuleApiResponse): ProductModule => ({
+  code: apiModule.code,
+  name: apiModule.name,
+  nameZh: apiModule.name_zh,
+  description: apiModule.description || '',
+  descriptionZh: apiModule.description_zh,
+  isEnabled: apiModule.is_enabled,
+  products: apiModule.products.map(p => transformProduct(p, apiModule.code)),
+});
+
+/**
+ * Fetch all products grouped by module for the current client.
+ * Returns products from enabled modules only.
+ */
+export const useClientProducts = () => {
+  return useQuery({
+    queryKey: ['clientProducts'],
+    queryFn: async (): Promise<ProductModule[]> => {
+      const response = await apiClient.get<ClientProductModuleApiResponse[]>('/client/products');
+      return response.data.map(transformProductModule);
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * Fetch products for a specific module.
+ */
+export const useModuleProducts = (moduleCode: string) => {
+  return useQuery({
+    queryKey: ['moduleProducts', moduleCode],
+    queryFn: async (): Promise<Product[]> => {
+      const response = await apiClient.get<ClientProductApiResponse[]>(`/client/products/${moduleCode}`);
+      return response.data.map(p => transformProduct(p, moduleCode));
+    },
+    enabled: !!moduleCode,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 

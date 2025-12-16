@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   TextInput,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import {
   Box,
@@ -20,24 +21,35 @@ import { GradientCard } from '../../components/ui/GradientCard';
 import { ProductCard } from '../../components/lab/ProductCard';
 import { CartSheet } from '../../components/lab/CartSheet';
 import { useCart } from '../../contexts/CartContext';
-import { MOCK_PRODUCT_MODULES } from '../../data/mockProducts';
+import { useClientProducts } from '../../api/hooks';
 import type { ProductModule } from '../../types/api';
 
 export default function AllocationLabScreen() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedModules, setExpandedModules] = useState<Set<string>>(
-    new Set(MOCK_PRODUCT_MODULES.filter((m) => m.isEnabled).map((m) => m.code))
-  );
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [isCartVisible, setIsCartVisible] = useState(false);
 
   const { itemCount, isInCart, toggleCartItem } = useCart();
 
+  // Fetch products from API
+  const { data: productModules, isLoading, error, refetch } = useClientProducts();
+
+  // Auto-expand enabled modules when data loads
+  useEffect(() => {
+    if (productModules && expandedModules.size === 0) {
+      setExpandedModules(
+        new Set(productModules.filter((m) => m.isEnabled).map((m) => m.code))
+      );
+    }
+  }, [productModules]);
+
   // Filter products by search query
   const filteredModules = useMemo(() => {
-    if (!searchQuery.trim()) return MOCK_PRODUCT_MODULES;
+    if (!productModules) return [];
+    if (!searchQuery.trim()) return productModules;
 
     const query = searchQuery.toLowerCase();
-    return MOCK_PRODUCT_MODULES.map((module) => ({
+    return productModules.map((module) => ({
       ...module,
       products: module.products.filter(
         (p) =>
@@ -46,7 +58,7 @@ export default function AllocationLabScreen() {
           p.tags.some((t) => t.toLowerCase().includes(query))
       ),
     })).filter((m) => m.products.length > 0);
-  }, [searchQuery]);
+  }, [searchQuery, productModules]);
 
   const toggleModuleExpand = (moduleCode: string) => {
     setExpandedModules((prev) => {
@@ -122,7 +134,36 @@ export default function AllocationLabScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {filteredModules.map((module) => (
+        {/* Loading State */}
+        {isLoading && (
+          <Box alignItems="center" paddingVertical="$8">
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text color={colors.textSecondary} marginTop="$4">
+              Loading products...
+            </Text>
+          </Box>
+        )}
+
+        {/* Error State */}
+        {error && !isLoading && (
+          <Box alignItems="center" paddingVertical="$8">
+            <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
+            <Text color={colors.textSecondary} marginTop="$2" textAlign="center">
+              Failed to load products
+            </Text>
+            <TouchableOpacity
+              onPress={() => refetch()}
+              style={styles.retryButton}
+            >
+              <Text color={colors.primary} fontWeight="$semibold">
+                Tap to retry
+              </Text>
+            </TouchableOpacity>
+          </Box>
+        )}
+
+        {/* Module List */}
+        {!isLoading && !error && filteredModules.map((module) => (
           <ModuleSection
             key={module.code}
             module={module}
@@ -133,11 +174,22 @@ export default function AllocationLabScreen() {
           />
         ))}
 
-        {filteredModules.length === 0 && (
+        {/* Empty Search Results */}
+        {!isLoading && !error && filteredModules.length === 0 && searchQuery.trim() && (
           <Box alignItems="center" paddingVertical="$8">
             <Ionicons name="search-outline" size={48} color={colors.textMuted} />
             <Text color={colors.textSecondary} marginTop="$2">
               No products match your search
+            </Text>
+          </Box>
+        )}
+
+        {/* No Products Available */}
+        {!isLoading && !error && productModules?.length === 0 && !searchQuery.trim() && (
+          <Box alignItems="center" paddingVertical="$8">
+            <Ionicons name="cube-outline" size={48} color={colors.textMuted} />
+            <Text color={colors.textSecondary} marginTop="$2">
+              No products available
             </Text>
           </Box>
         )}
@@ -299,6 +351,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 6,
+  },
+  retryButton: {
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
 });
 

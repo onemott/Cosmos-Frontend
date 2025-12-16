@@ -224,11 +224,11 @@ export default function HomeScreen() {
           <VStack space="md">
             <Heading size="md" color="white">Performance</Heading>
             <HStack justifyContent="space-around">
-              <PerformanceMetric label="1M" value={portfolio.performance['1M']} />
-              <PerformanceMetric label="3M" value={portfolio.performance['3M']} />
-              <PerformanceMetric label="6M" value={portfolio.performance['6M']} />
-              <PerformanceMetric label="YTD" value={portfolio.performance.YTD} />
-              <PerformanceMetric label="1Y" value={portfolio.performance['1Y']} />
+              <PerformanceMetric label="1M" value={portfolio.performance?.['1M'] ?? null} />
+              <PerformanceMetric label="3M" value={portfolio.performance?.['3M'] ?? null} />
+              <PerformanceMetric label="6M" value={portfolio.performance?.['6M'] ?? null} />
+              <PerformanceMetric label="YTD" value={portfolio.performance?.YTD ?? null} />
+              <PerformanceMetric label="1Y" value={portfolio.performance?.['1Y'] ?? null} />
             </HStack>
           </VStack>
         </GradientCard>
