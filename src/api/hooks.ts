@@ -46,6 +46,18 @@ export const useLogout = () => {
   });
 };
 
+export const useChangePassword = () => {
+  return useMutation({
+    mutationFn: async (data: { current_password: string; new_password: string }) => {
+      const response = await apiClient.post<{ message: string; success: boolean }>(
+        '/client/auth/change-password',
+        data
+      );
+      return response.data;
+    },
+  });
+};
+
 export const useClientProfile = (enabled: boolean = true) => {
   return useQuery({
     queryKey: ['clientProfile'],
@@ -422,6 +434,54 @@ export const useModuleProducts = (moduleCode: string) => {
     },
     enabled: !!moduleCode,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+// ============================================================================
+// Invitation / Registration (Public endpoints - no auth required)
+// ============================================================================
+
+import type {
+  InvitationValidateResponse,
+  ClientRegistrationRequest,
+  ClientRegistrationResponse,
+} from '../types/api';
+
+/**
+ * Validate an invitation code before showing registration form.
+ */
+export const useValidateInvitation = (code: string) => {
+  return useQuery({
+    queryKey: ['invitation', 'validate', code],
+    queryFn: async (): Promise<InvitationValidateResponse> => {
+      const response = await apiClient.get<InvitationValidateResponse>(
+        `/invitations/public/${code}/validate`
+      );
+      return response.data;
+    },
+    enabled: !!code && code.length >= 9, // Only fetch if code looks complete
+    retry: false, // Don't retry on invalid codes
+  });
+};
+
+/**
+ * Register a new client using an invitation code.
+ */
+export const useRegisterWithInvitation = () => {
+  return useMutation({
+    mutationFn: async ({
+      code,
+      data,
+    }: {
+      code: string;
+      data: ClientRegistrationRequest;
+    }): Promise<ClientRegistrationResponse> => {
+      const response = await apiClient.post<ClientRegistrationResponse>(
+        `/invitations/public/${code}/register`,
+        data
+      );
+      return response.data;
+    },
   });
 };
 

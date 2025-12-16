@@ -4,11 +4,49 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
+export interface ChangePasswordResponse {
+  message: string;
+  success: boolean;
+}
+
 export interface LoginResponse {
   access_token: string;
   refresh_token: string;
   token_type: string;
   user_type: string;
+}
+
+// Invitation / Registration
+export interface InvitationValidateResponse {
+  valid: boolean;
+  code: string;
+  email?: string;
+  invitee_name?: string;
+  message?: string;
+  tenant_name: string;
+  expires_at: string;
+  error?: string;
+}
+
+export interface ClientRegistrationRequest {
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+  phone?: string;
+}
+
+export interface ClientRegistrationResponse {
+  success: boolean;
+  message: string;
+  client_id: string;
+  client_user_id: string;
+  requires_approval: boolean;
 }
 
 export interface ClientProfile {

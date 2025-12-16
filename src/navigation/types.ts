@@ -5,6 +5,7 @@ import type { RouteProp } from '@react-navigation/native';
 
 export type AuthStackParamList = {
   Login: undefined;
+  Register: { code?: string } | undefined;
 };
 
 export type MainTabParamList = {

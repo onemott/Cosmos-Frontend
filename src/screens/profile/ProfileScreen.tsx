@@ -4,6 +4,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {
   Box,
@@ -15,10 +18,20 @@ import {
   Divider,
   Badge,
   BadgeText,
+  Input,
+  InputField,
+  Button,
+  ButtonText,
+  FormControl,
+  FormControlLabel,
+  FormControlLabelText,
+  FormControlError,
+  FormControlErrorText,
 } from '@gluestack-ui/themed';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../config/theme';
 import { useAuth } from '../../contexts/AuthContext';
+import { useChangePassword } from '../../api/hooks';
 import { format } from 'date-fns';
 
 const RISK_PROFILE_CONFIG: Record<string, { color: string; label: string }> = {
@@ -34,6 +47,76 @@ const APP_VERSION = '1.0.0 (MVP)';
 export default function ProfileScreen() {
   const { user: profile, isLoading, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
+  // Change password state
+  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
+  
+  const changePasswordMutation = useChangePassword();
+
+  const resetPasswordForm = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordErrors({});
+  };
+
+  const validatePasswordForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (!currentPassword) {
+      errors.currentPassword = 'Current password is required';
+    }
+    
+    if (!newPassword) {
+      errors.newPassword = 'New password is required';
+    } else if (newPassword.length < 8) {
+      errors.newPassword = 'Password must be at least 8 characters';
+    }
+    
+    if (newPassword !== confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+    
+    if (currentPassword === newPassword) {
+      errors.newPassword = 'New password must be different from current';
+    }
+    
+    setPasswordErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleChangePassword = async () => {
+    if (!validatePasswordForm()) return;
+    
+    try {
+      await changePasswordMutation.mutateAsync({
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      
+      setPasswordModalVisible(false);
+      resetPasswordForm();
+      
+      Alert.alert(
+        'Success',
+        'Your password has been changed successfully.',
+        [{ text: 'OK' }]
+      );
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { detail?: string } } };
+      const errorMessage = axiosError.response?.data?.detail || 'Failed to change password';
+      
+      if (errorMessage.toLowerCase().includes('current password')) {
+        setPasswordErrors({ currentPassword: 'Current password is incorrect' });
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -242,8 +325,7 @@ export default function ProfileScreen() {
             <MenuItem
               icon="lock-closed-outline"
               label="Change Password"
-              isDisabled
-              onPress={() => handleComingSoon('Change Password')}
+              onPress={() => setPasswordModalVisible(true)}
             />
           </VStack>
         </Box>
@@ -297,6 +379,154 @@ export default function ProfileScreen() {
           App Version: {APP_VERSION}
         </Text>
       </VStack>
+
+      {/* Change Password Modal */}
+      <Modal
+        visible={passwordModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setPasswordModalVisible(false);
+          resetPasswordForm();
+        }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+        >
+          <Box style={styles.modalContent}>
+            <HStack justifyContent="space-between" alignItems="center" marginBottom="$4">
+              <Heading size="lg" color="white">Change Password</Heading>
+              <TouchableOpacity
+                onPress={() => {
+                  setPasswordModalVisible(false);
+                  resetPasswordForm();
+                }}
+              >
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </HStack>
+
+            <VStack space="md">
+              <FormControl isInvalid={!!passwordErrors.currentPassword}>
+                <FormControlLabel>
+                  <FormControlLabelText color={colors.textSecondary}>
+                    Current Password
+                  </FormControlLabelText>
+                </FormControlLabel>
+                <Input
+                  variant="outline"
+                  borderColor={colors.border}
+                  bg={colors.surfaceHighlight}
+                  borderRadius="$lg"
+                >
+                  <InputField
+                    placeholder="Enter current password"
+                    placeholderTextColor={colors.textMuted}
+                    color="white"
+                    secureTextEntry
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                  />
+                </Input>
+                {passwordErrors.currentPassword && (
+                  <FormControlError>
+                    <FormControlErrorText color={colors.error}>
+                      {passwordErrors.currentPassword}
+                    </FormControlErrorText>
+                  </FormControlError>
+                )}
+              </FormControl>
+
+              <FormControl isInvalid={!!passwordErrors.newPassword}>
+                <FormControlLabel>
+                  <FormControlLabelText color={colors.textSecondary}>
+                    New Password
+                  </FormControlLabelText>
+                </FormControlLabel>
+                <Input
+                  variant="outline"
+                  borderColor={colors.border}
+                  bg={colors.surfaceHighlight}
+                  borderRadius="$lg"
+                >
+                  <InputField
+                    placeholder="Enter new password (min 8 characters)"
+                    placeholderTextColor={colors.textMuted}
+                    color="white"
+                    secureTextEntry
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                  />
+                </Input>
+                {passwordErrors.newPassword && (
+                  <FormControlError>
+                    <FormControlErrorText color={colors.error}>
+                      {passwordErrors.newPassword}
+                    </FormControlErrorText>
+                  </FormControlError>
+                )}
+              </FormControl>
+
+              <FormControl isInvalid={!!passwordErrors.confirmPassword}>
+                <FormControlLabel>
+                  <FormControlLabelText color={colors.textSecondary}>
+                    Confirm New Password
+                  </FormControlLabelText>
+                </FormControlLabel>
+                <Input
+                  variant="outline"
+                  borderColor={colors.border}
+                  bg={colors.surfaceHighlight}
+                  borderRadius="$lg"
+                >
+                  <InputField
+                    placeholder="Confirm new password"
+                    placeholderTextColor={colors.textMuted}
+                    color="white"
+                    secureTextEntry
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                  />
+                </Input>
+                {passwordErrors.confirmPassword && (
+                  <FormControlError>
+                    <FormControlErrorText color={colors.error}>
+                      {passwordErrors.confirmPassword}
+                    </FormControlErrorText>
+                  </FormControlError>
+                )}
+              </FormControl>
+
+              <HStack space="md" marginTop="$4">
+                <Button
+                  flex={1}
+                  variant="outline"
+                  borderColor={colors.border}
+                  onPress={() => {
+                    setPasswordModalVisible(false);
+                    resetPasswordForm();
+                  }}
+                >
+                  <ButtonText color={colors.textSecondary}>Cancel</ButtonText>
+                </Button>
+                <Button
+                  flex={1}
+                  bg={colors.primary}
+                  onPress={handleChangePassword}
+                  isDisabled={changePasswordMutation.isPending}
+                >
+                  {changePasswordMutation.isPending ? (
+                    <Spinner size="small" color="white" />
+                  ) : (
+                    <ButtonText color="white">Change Password</ButtonText>
+                  )}
+                </Button>
+              </HStack>
+            </VStack>
+          </Box>
+        </KeyboardAvoidingView>
+      </Modal>
     </ScrollView>
   );
 }
@@ -372,5 +602,19 @@ const styles = StyleSheet.create({
   },
   logoutButtonDisabled: {
     opacity: 0.6,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl + 20, // Extra padding for home indicator
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 });

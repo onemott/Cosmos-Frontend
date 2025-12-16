@@ -53,7 +53,7 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor: Handle 401 (token expired)
+// Response interceptor: Handle 401 (token expired) and 403 (deactivated)
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -61,6 +61,22 @@ apiClient.interceptors.response.use(
 
     if (!originalRequest) {
       return Promise.reject(error);
+    }
+
+    // Handle 403 "Account deactivated" - clear tokens and logout
+    if (error.response?.status === 403) {
+      const errorData = error.response.data as { detail?: string } | undefined;
+      if (errorData?.detail?.toLowerCase().includes('deactivated')) {
+        // Clear tokens and notify auth context
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+        
+        if (onAuthFailedCallback) {
+          onAuthFailedCallback();
+        }
+        
+        return Promise.reject(error);
+      }
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
