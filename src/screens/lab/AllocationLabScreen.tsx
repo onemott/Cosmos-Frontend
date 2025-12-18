@@ -16,20 +16,28 @@ import {
   Divider,
 } from '@gluestack-ui/themed';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, borderRadius } from '../../config/theme';
 import { GradientCard } from '../../components/ui/GradientCard';
 import { ProductCard } from '../../components/lab/ProductCard';
 import { CartSheet } from '../../components/lab/CartSheet';
 import { useCart } from '../../contexts/CartContext';
 import { useClientProducts } from '../../api/hooks';
-import type { ProductModule } from '../../types/api';
+import type { ProductModule, Product } from '../../types/api';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { LabStackParamList } from '../../navigation/types';
 
 export default function AllocationLabScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<LabStackParamList>>();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [isCartVisible, setIsCartVisible] = useState(false);
 
   const { itemCount, isInCart, toggleCartItem } = useCart();
+
+  const handleProductPress = (product: Product) => {
+    navigation.navigate('ProductDetail', { product });
+  };
 
   // Fetch products from API
   const { data: productModules, isLoading, error, refetch } = useClientProducts();
@@ -171,6 +179,7 @@ export default function AllocationLabScreen() {
             onToggleExpand={() => toggleModuleExpand(module.code)}
             isInCart={isInCart}
             onToggleProduct={toggleCartItem}
+            onProductPress={handleProductPress}
           />
         ))}
 
@@ -235,6 +244,7 @@ interface ModuleSectionProps {
   onToggleExpand: () => void;
   isInCart: (productId: string) => boolean;
   onToggleProduct: (product: any) => void;
+  onProductPress: (product: Product) => void;
 }
 
 function ModuleSection({
@@ -243,6 +253,7 @@ function ModuleSection({
   onToggleExpand,
   isInCart,
   onToggleProduct,
+  onProductPress,
 }: ModuleSectionProps) {
   const enabledCount = module.products.length;
 
@@ -306,6 +317,7 @@ function ModuleSection({
               isSelected={isInCart(product.id)}
               isLocked={!module.isEnabled}
               onToggle={() => onToggleProduct(product)}
+              onPress={() => onProductPress(product)}
             />
           ))}
         </Box>

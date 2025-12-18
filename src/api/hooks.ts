@@ -15,6 +15,7 @@ import type {
   ProductRequestResponse,
   ProductModule,
   Product,
+  ProductDocument,
   ClientProductModuleApiResponse,
   ClientProductApiResponse,
 } from '../types/api';
@@ -226,15 +227,81 @@ export const usePortfolioAllocation = () => {
 };
 
 // Documents
+interface DocumentListResponse {
+  documents: Document[];
+  total_count: number;
+}
+
 export const useDocuments = (documentType?: string) => {
   return useQuery({
     queryKey: ['documents', documentType],
     queryFn: async () => {
       const params = documentType ? { document_type: documentType } : {};
-      const response = await apiClient.get<Document[]>('/client/documents', { params });
-      return response.data;
+      const response = await apiClient.get<DocumentListResponse>('/client/documents', { params });
+      return response.data.documents; // Extract documents array from response
     },
   });
+};
+
+// Document Download Info
+export interface DocumentDownloadInfo {
+  document_id: string;
+  file_name: string;
+  mime_type: string;
+  file_size: number;
+  download_url: string | null;
+  expires_at: string | null;
+}
+
+export const useDocumentDownloadInfo = (documentId: string) => {
+  return useQuery({
+    queryKey: ['documentDownload', documentId],
+    queryFn: async (): Promise<DocumentDownloadInfo> => {
+      const response = await apiClient.get<DocumentDownloadInfo>(
+        `/client/documents/${documentId}/download-info`
+      );
+      return response.data;
+    },
+    enabled: !!documentId,
+    staleTime: 10 * 60 * 1000, // 10 minutes (less than presigned URL expiry)
+  });
+};
+
+/**
+ * Get the document download URL with auth header.
+ * For local storage, this returns the API endpoint URL.
+ * For S3 storage, the backend redirects to presigned URL.
+ */
+export const getDocumentDownloadUrl = (documentId: string): string => {
+  return `${apiClient.defaults.baseURL}/client/documents/${documentId}/download`;
+};
+
+/**
+ * Get the current access token for authenticated downloads.
+ */
+export const getAccessToken = async (): Promise<string | null> => {
+  return tokenStorage.getAccessToken();
+};
+
+// Product Documents
+export const useProductDocuments = (productId: string) => {
+  return useQuery({
+    queryKey: ['productDocuments', productId],
+    queryFn: async (): Promise<ProductDocument[]> => {
+      const response = await apiClient.get<ProductDocument[]>(
+        `/client/products/${productId}/documents`
+      );
+      return response.data;
+    },
+    enabled: !!productId,
+  });
+};
+
+/**
+ * Get the product document download URL.
+ */
+export const getProductDocumentDownloadUrl = (productId: string, documentId: string): string => {
+  return `${apiClient.defaults.baseURL}/client/products/${productId}/documents/${documentId}/download`;
 };
 
 // Tasks

@@ -18,6 +18,7 @@ interface ProductCardProps {
   isSelected: boolean;
   isLocked: boolean;
   onToggle: () => void;
+  onPress?: () => void;
 }
 
 const RISK_COLORS: Record<string, string> = {
@@ -26,17 +27,22 @@ const RISK_COLORS: Record<string, string> = {
   high: colors.error,
 };
 
-export function ProductCard({ product, isSelected, isLocked, onToggle }: ProductCardProps) {
+export function ProductCard({ product, isSelected, isLocked, onToggle, onPress }: ProductCardProps) {
   return (
     <TouchableOpacity
-      onPress={isLocked ? undefined : onToggle}
+      onPress={isLocked ? undefined : onPress}
       activeOpacity={isLocked ? 1 : 0.7}
       disabled={isLocked}
     >
       <Box style={[styles.container, isSelected && styles.selectedContainer]}>
         <HStack space="md" alignItems="flex-start">
-          {/* Checkbox */}
-          <Box style={styles.checkboxContainer}>
+          {/* Checkbox - separate touch target */}
+          <TouchableOpacity
+            onPress={isLocked ? undefined : onToggle}
+            disabled={isLocked}
+            style={styles.checkboxContainer}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             {isLocked ? (
               <Ionicons name="lock-closed" size={20} color={colors.textMuted} />
             ) : (
@@ -51,7 +57,7 @@ export function ProductCard({ product, isSelected, isLocked, onToggle }: Product
                 )}
               </Box>
             )}
-          </Box>
+          </TouchableOpacity>
 
           {/* Content */}
           <VStack flex={1} space="xs">

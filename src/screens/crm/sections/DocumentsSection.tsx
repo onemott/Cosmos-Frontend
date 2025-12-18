@@ -1,28 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   ScrollView,
   RefreshControl,
   StyleSheet,
   TouchableOpacity,
-  Modal,
   Alert,
-  Linking,
+  Platform,
 } from 'react-native';
 import {
   Box,
-  VStack,
   HStack,
   Text,
-  Heading,
   Spinner,
-  Button,
-  ButtonText,
 } from '@gluestack-ui/themed';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../../config/theme';
 import { DocumentCard } from '../../../components/crm/DocumentCard';
-import { useDocuments } from '../../../api/hooks';
+import { DocumentViewer } from '../../../components/documents/DocumentViewer';
+import { useDocuments, getDocumentDownloadUrl, getAccessToken } from '../../../api/hooks';
 import type { Document } from '../../../types/api';
+
+// Optional dependencies for download/share
+let Sharing: any = null;
+let ExpoFS: any = null;
+
+try {
+  ExpoFS = require('expo-file-system');
+  Sharing = require('expo-sharing');
+} catch {
+  // Optional deps not available
+}
+
+// Helper function to download file using expo-file-system new API
+async function downloadFile(
+  url: string,
+  fileName: string,
+  useCache: boolean = false,
+  headers?: Record<string, string>
+): Promise<{ uri: string; status: number }> {
+  try {
+    if (!ExpoFS?.File || !ExpoFS?.Paths) {
+      return { uri: '', status: 500 };
+    }
+    
+    const { File, Paths } = ExpoFS;
+    const directory = useCache ? Paths.cache : Paths.document;
+    const destFile = new File(directory, fileName);
+    
+    // Use static File.downloadFileAsync method
+    const resultFile = await File.downloadFileAsync(url, destFile, {
+      headers: headers || {},
+    });
+    
+    return { uri: resultFile.uri, status: 200 };
+  } catch (error) {
+    console.error('Download error:', error);
+    throw error;
+  }
+}
 
 const DOCUMENT_FILTERS = [
   { key: undefined, label: 'All' },
@@ -36,31 +71,123 @@ export default function DocumentsSection() {
   const [filterType, setFilterType] = useState<string | undefined>(undefined);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [isViewerVisible, setIsViewerVisible] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const { data: documents, isLoading, refetch, isRefetching } = useDocuments(filterType);
 
-  const handleDocumentPress = (doc: Document) => {
+  const handleDocumentPress = useCallback(async (doc: Document) => {
+    // Get auth token for authenticated requests
+    const token = await getAccessToken();
+    setAuthToken(token);
     setSelectedDocument(doc);
     setIsViewerVisible(true);
-  };
+  }, []);
 
-  const handleDownload = () => {
-    // TODO: Implement actual download via API
-    Alert.alert(
-      'Download',
-      'Document download will be available once backend integration is complete.',
-      [{ text: 'OK' }]
-    );
-  };
+  const handleCloseViewer = useCallback(() => {
+    setIsViewerVisible(false);
+    setSelectedDocument(null);
+  }, []);
 
-  const handleShare = () => {
-    // TODO: Implement sharing
-    Alert.alert(
-      'Share',
-      'Document sharing will be available once backend integration is complete.',
-      [{ text: 'OK' }]
-    );
-  };
+  const handleDownload = useCallback(async () => {
+    if (!selectedDocument) return;
+
+    if (!ExpoFS?.File || !ExpoFS?.Paths) {
+      Alert.alert(
+        'Not Available',
+        'Download functionality requires expo-file-system. Please install it to enable downloads.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    setIsDownloading(true);
+    try {
+      const token = await getAccessToken();
+      const downloadUrl = getDocumentDownloadUrl(selectedDocument.id);
+
+      const downloadResult = await downloadFile(
+        downloadUrl,
+        selectedDocument.file_name,
+        false, // save to documents, not cache
+        token ? { Authorization: `Bearer ${token}` } : {}
+      );
+
+      if (downloadResult.status === 200) {
+        Alert.alert(
+          'Download Complete',
+          `${selectedDocument.name} has been saved to your device.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        throw new Error(`Download failed with status ${downloadResult.status}`);
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      Alert.alert(
+        'Download Failed',
+        'Unable to download the document. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [selectedDocument]);
+
+  const handleShare = useCallback(async () => {
+    if (!selectedDocument) return;
+
+    if (!ExpoFS?.File || !ExpoFS?.Paths || !Sharing) {
+      Alert.alert(
+        'Not Available',
+        'Sharing functionality requires expo-file-system and expo-sharing. Please install them to enable sharing.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    // Check if sharing is available on this platform
+    const isAvailable = await Sharing.isAvailableAsync();
+    if (!isAvailable) {
+      Alert.alert('Not Available', 'Sharing is not available on this device.', [{ text: 'OK' }]);
+      return;
+    }
+
+    setIsDownloading(true);
+    try {
+      const token = await getAccessToken();
+      const downloadUrl = getDocumentDownloadUrl(selectedDocument.id);
+
+      // Download to cache first
+      const downloadResult = await downloadFile(
+        downloadUrl,
+        selectedDocument.file_name,
+        true, // use cache for sharing
+        token ? { Authorization: `Bearer ${token}` } : {}
+      );
+
+      if (downloadResult.status === 200 && downloadResult.uri) {
+        await Sharing.shareAsync(downloadResult.uri, {
+          mimeType: selectedDocument.mime_type,
+          dialogTitle: `Share ${selectedDocument.name}`,
+        });
+      } else {
+        throw new Error(`Download failed with status ${downloadResult.status}`);
+      }
+    } catch (error) {
+      console.error('Share error:', error);
+      Alert.alert('Share Failed', 'Unable to share the document. Please try again.', [
+        { text: 'OK' },
+      ]);
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [selectedDocument]);
+
+  const getDownloadUrl = useCallback(() => {
+    if (!selectedDocument) return null;
+    return getDocumentDownloadUrl(selectedDocument.id);
+  }, [selectedDocument]);
 
   if (isLoading) {
     return (
@@ -135,92 +262,37 @@ export default function DocumentsSection() {
         )}
       </ScrollView>
 
-      {/* Document Viewer Modal */}
-      <Modal
+      {/* Document Viewer */}
+      <DocumentViewer
         visible={isViewerVisible}
-        animationType="slide"
-        onRequestClose={() => setIsViewerVisible(false)}
-      >
-        <Box flex={1} bg={colors.background}>
-          {/* Header */}
-          <HStack
-            justifyContent="space-between"
-            alignItems="center"
-            padding="$4"
-            paddingTop="$6"
-            borderBottomWidth={1}
-            borderBottomColor={colors.border}
-          >
-            <TouchableOpacity onPress={() => setIsViewerVisible(false)}>
-              <HStack alignItems="center" space="xs">
-                <Ionicons name="chevron-back" size={24} color={colors.primary} />
-                <Text color={colors.primary}>Back</Text>
-              </HStack>
-            </TouchableOpacity>
-            
-            <HStack space="md">
-              <TouchableOpacity onPress={handleShare}>
-                <Ionicons name="share-outline" size={24} color={colors.textSecondary} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleDownload}>
-                <Ionicons name="download-outline" size={24} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </HStack>
-          </HStack>
+        document={selectedDocument}
+        downloadUrl={getDownloadUrl()}
+        authToken={authToken}
+        onClose={handleCloseViewer}
+        onDownload={handleDownload}
+        onShare={handleShare}
+      />
 
-          {/* Document Info & Preview Placeholder */}
-          <Box flex={1} justifyContent="center" alignItems="center" padding="$4">
-            {selectedDocument && (
-              <VStack space="lg" alignItems="center">
-                <Box
-                  bg={colors.surface}
-                  padding="$6"
-                  borderRadius={borderRadius.xl}
-                >
-                  <Ionicons name="document-text" size={64} color={colors.primary} />
-                </Box>
-                
-                <VStack space="xs" alignItems="center">
-                  <Heading size="lg" color="white" textAlign="center">
-                    {selectedDocument.name}
-                  </Heading>
-                  <Text color={colors.textSecondary} textTransform="capitalize">
-                    {selectedDocument.document_type}
-                  </Text>
-                </VStack>
-
-                <Box
-                  bg={colors.surface}
-                  padding="$4"
-                  borderRadius={borderRadius.lg}
-                  width="100%"
-                >
-                  <Text size="sm" color={colors.textMuted} textAlign="center">
-                    PDF viewer requires react-native-pdf integration.
-                    {'\n\n'}
-                    For now, documents can be downloaded and viewed externally.
-                  </Text>
-                </Box>
-
-                <HStack space="md" marginTop="$4">
-                  <Button
-                    variant="outline"
-                    borderColor={colors.border}
-                    onPress={handleShare}
-                  >
-                    <Ionicons name="share-outline" size={18} color={colors.textSecondary} />
-                    <ButtonText color={colors.textSecondary} marginLeft="$2">Share</ButtonText>
-                  </Button>
-                  <Button bg={colors.primary} onPress={handleDownload}>
-                    <Ionicons name="download-outline" size={18} color="white" />
-                    <ButtonText marginLeft="$2">Download</ButtonText>
-                  </Button>
-                </HStack>
-              </VStack>
-            )}
+      {/* Loading overlay for download/share */}
+      {isDownloading && (
+        <Box
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          bg="rgba(0,0,0,0.5)"
+          justifyContent="center"
+          alignItems="center"
+        >
+          <Box bg={colors.surface} padding="$6" borderRadius={borderRadius.lg}>
+            <Spinner size="large" color={colors.primary} />
+            <Text color={colors.textSecondary} marginTop="$3">
+              Processing...
+            </Text>
           </Box>
         </Box>
-      </Modal>
+      )}
     </Box>
   );
 }

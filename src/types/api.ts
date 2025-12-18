@@ -146,7 +146,11 @@ export interface Document {
   id: string;
   name: string;
   document_type: string;
+  status: string;
+  file_name: string;
   file_size: number;
+  mime_type: string;
+  description?: string;
   created_at: string;
 }
 
@@ -265,5 +269,16 @@ export interface ProductRequestResponse {
   task_id: string;
   message: string;
   products_count: number;
+}
+
+// Product Documents (for viewing product info materials)
+export interface ProductDocument {
+  id: string;
+  name: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  description?: string;
+  created_at: string;
 }
 

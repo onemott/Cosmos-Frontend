@@ -27,6 +27,7 @@ export type AccountsStackParamList = {
 
 export type LabStackParamList = {
   AllocationLab: undefined;
+  ProductDetail: { product: import('../types/api').Product };
 };
 
 export type CRMStackParamList = {
