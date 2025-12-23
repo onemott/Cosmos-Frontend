@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../../config/theme';
 import { MOCK_CALENDAR_EVENTS, CalendarEvent } from '../../../data/mockCRM';
 import { format, isToday, isTomorrow, isThisWeek, parseISO } from 'date-fns';
+import { useTranslation } from '../../../lib/i18n';
 
 // Group events by date
 const groupEventsByDate = (events: CalendarEvent[]) => {
@@ -28,10 +29,10 @@ const groupEventsByDate = (events: CalendarEvent[]) => {
   return grouped;
 };
 
-const getDateLabel = (dateStr: string): string => {
+const getDateLabel = (dateStr: string, t: (key: string) => string): string => {
   const date = parseISO(dateStr);
-  if (isToday(date)) return 'Today';
-  if (isTomorrow(date)) return 'Tomorrow';
+  if (isToday(date)) return t('crm.calendar.today');
+  if (isTomorrow(date)) return t('crm.calendar.tomorrow');
   if (isThisWeek(date)) return format(date, 'EEEE'); // Day name
   return format(date, 'MMM d, yyyy');
 };
@@ -43,6 +44,7 @@ const EVENT_TYPE_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; 
 };
 
 export default function CalendarSection() {
+  const { t } = useTranslation();
   const groupedEvents = groupEventsByDate(MOCK_CALENDAR_EVENTS);
   const dateKeys = Object.keys(groupedEvents);
 
@@ -54,7 +56,7 @@ export default function CalendarSection() {
       {/* Header */}
       <Box marginBottom="$4">
         <Text size="sm" color={colors.textSecondary}>
-          Upcoming events and deadlines
+          {t('crm.calendar.upcomingEvents')}
         </Text>
       </Box>
 
@@ -62,7 +64,7 @@ export default function CalendarSection() {
         <Box alignItems="center" paddingVertical="$8">
           <Ionicons name="calendar-outline" size={48} color={colors.textMuted} />
           <Text color={colors.textSecondary} marginTop="$2">
-            No upcoming events
+            {t('crm.calendar.noEvents')}
           </Text>
         </Box>
       ) : (
@@ -77,7 +79,7 @@ export default function CalendarSection() {
                 borderRadius={borderRadius.md}
               >
                 <Text size="sm" fontWeight="$semibold" color="white">
-                  {getDateLabel(date)}
+                  {getDateLabel(date, t)}
                 </Text>
               </Box>
               <Text size="xs" color={colors.textMuted}>
@@ -88,7 +90,7 @@ export default function CalendarSection() {
             {/* Events for this date */}
             <VStack space="sm">
               {groupedEvents[date].map((event) => (
-                <EventCard key={event.id} event={event} />
+                <EventCard key={event.id} event={event} t={t} />
               ))}
             </VStack>
           </Box>
@@ -102,9 +104,10 @@ export default function CalendarSection() {
 
 interface EventCardProps {
   event: CalendarEvent;
+  t: (key: string) => string;
 }
 
-function EventCard({ event }: EventCardProps) {
+function EventCard({ event, t }: EventCardProps) {
   const config = EVENT_TYPE_CONFIG[event.type] || EVENT_TYPE_CONFIG.reminder;
 
   return (
@@ -114,7 +117,7 @@ function EventCard({ event }: EventCardProps) {
         <Box width={50} alignItems="center">
           {event.isAllDay ? (
             <Text size="xs" color={colors.textMuted}>
-              All day
+              {t('crm.calendar.allDay')}
             </Text>
           ) : event.time ? (
             <Text size="sm" fontWeight="$medium" color="white">
@@ -161,9 +164,8 @@ function EventCard({ event }: EventCardProps) {
               <Text
                 size="xs"
                 color={event.priority === 'high' || event.priority === 'urgent' ? colors.error : colors.textMuted}
-                textTransform="capitalize"
               >
-                {event.priority} priority
+                {t(`crm.calendar.priority.${event.priority}`)}
               </Text>
             </HStack>
           )}

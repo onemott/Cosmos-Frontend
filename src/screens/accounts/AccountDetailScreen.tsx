@@ -15,12 +15,14 @@ import { useAccountDetail } from '../../api/hooks';
 import { formatCurrency } from '../../utils/format';
 import { colors, spacing } from '../../config/theme';
 import { GradientCard } from '../../components/ui/GradientCard';
+import { useTranslation } from '../../lib/i18n';
 import type { AccountDetailRouteProp } from '../../navigation/types';
 import type { Holding } from '../../types/api';
 
 export default function AccountDetailScreen() {
   const route = useRoute<AccountDetailRouteProp>();
   const { accountId } = route.params;
+  const { t } = useTranslation();
 
   const { data: account, isLoading } = useAccountDetail(accountId);
 
@@ -35,7 +37,7 @@ export default function AccountDetailScreen() {
   if (!account) {
     return (
       <Box flex={1} justifyContent="center" alignItems="center" bg={colors.background}>
-        <Text color={colors.textSecondary}>Account not found</Text>
+        <Text color={colors.textSecondary}>{t('accounts.accountNotFound')}</Text>
       </Box>
     );
   }
@@ -65,7 +67,7 @@ export default function AccountDetailScreen() {
         <GradientCard variant="primary">
           <VStack space="md">
             <VStack space="xs">
-              <Text size="sm" color="white" opacity={0.8}>Total Value</Text>
+              <Text size="sm" color="white" opacity={0.8}>{t('accounts.totalValue')}</Text>
               <Heading size="3xl" color="white">
                 {formatCurrency(account.total_value, account.currency)}
               </Heading>
@@ -75,13 +77,13 @@ export default function AccountDetailScreen() {
             
             <HStack justifyContent="space-between" alignItems="center">
               <VStack>
-                <Text size="xs" color="white" opacity={0.8}>Cash Balance</Text>
+                <Text size="xs" color="white" opacity={0.8}>{t('accounts.cashBalance')}</Text>
                 <Text size="lg" color="white" fontWeight="$semibold">
                   {formatCurrency(account.cash_balance, account.currency)}
                 </Text>
               </VStack>
               <VStack alignItems="flex-end">
-                <Text size="xs" color="white" opacity={0.8}>Account Type</Text>
+                <Text size="xs" color="white" opacity={0.8}>{t('accounts.accountType')}</Text>
                 <Text size="md" color="white" fontWeight="$medium">
                   {account.account_type}
                 </Text>
@@ -94,7 +96,7 @@ export default function AccountDetailScreen() {
         {pieData.length > 0 && (
           <GradientCard variant="dark">
             <VStack space="md">
-              <Heading size="md" color="white">Asset Allocation</Heading>
+              <Heading size="md" color="white">{t('home.assetAllocation')}</Heading>
               <Box alignItems="center">
                 <VictoryPie
                   data={pieData}
@@ -130,10 +132,10 @@ export default function AccountDetailScreen() {
         {/* Holdings List */}
         <GradientCard variant="dark">
           <VStack space="md">
-            <Heading size="md" color="white">Holdings ({account.holdings_count})</Heading>
+            <Heading size="md" color="white">{t('accounts.holdingsCount')} ({account.holdings_count})</Heading>
             {holdings.length === 0 ? (
               <Text color={colors.textSecondary} textAlign="center" paddingVertical="$4">
-                No holdings in this account
+                {t('accounts.noHoldings')}
               </Text>
             ) : (
               holdings.map((holding, index) => (
@@ -159,6 +161,7 @@ function HoldingRow({ holding }: HoldingRowProps) {
   const isPositive = pnl >= 0;
   const quantity = parseFloat(holding.quantity);
   const costBasis = parseFloat(holding.cost_basis);
+  const { t } = useTranslation();
 
   return (
     <VStack space="xs">
@@ -185,13 +188,13 @@ function HoldingRow({ holding }: HoldingRowProps) {
       </HStack>
       <HStack space="md">
         <Text size="xs" color={colors.textSecondary}>
-          Qty: {quantity.toLocaleString()}
+          {t('accounts.quantity')}: {quantity.toLocaleString()}
         </Text>
         <Text size="xs" color={colors.textSecondary}>
-          Avg Cost: {formatCurrency(costBasis / quantity, holding.currency)}
+          {t('accounts.avgCost')}: {formatCurrency(costBasis / quantity, holding.currency)}
         </Text>
         <Text size="xs" color={isPositive ? colors.success : colors.error}>
-          P/L: {formatCurrency(holding.unrealized_pnl, holding.currency)}
+          {t('accounts.profitLoss')}: {formatCurrency(holding.unrealized_pnl, holding.currency)}
         </Text>
       </HStack>
     </VStack>

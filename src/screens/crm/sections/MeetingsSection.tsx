@@ -26,10 +26,12 @@ import {
   Meeting,
 } from '../../../data/mockCRM';
 import { format, parseISO } from 'date-fns';
+import { useTranslation } from '../../../lib/i18n';
 
 type ViewType = 'upcoming' | 'past';
 
 export default function MeetingsSection() {
+  const { t } = useTranslation();
   const [viewType, setViewType] = useState<ViewType>('upcoming');
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [isDetailVisible, setIsDetailVisible] = useState(false);
@@ -46,16 +48,16 @@ export default function MeetingsSection() {
   const handleJoinMeeting = (meetingLink?: string) => {
     if (meetingLink) {
       Linking.openURL(meetingLink).catch(() => {
-        Alert.alert('Error', 'Could not open meeting link');
+        Alert.alert(t('common.error'), t('crm.meetings.couldNotOpenLink'));
       });
     }
   };
 
   const handleBookMeeting = () => {
     Alert.alert(
-      'Book Meeting',
-      'Meeting booking will be available once the backend scheduling API is integrated.',
-      [{ text: 'OK' }]
+      t('crm.meetings.bookMeeting'),
+      t('crm.meetings.bookMeetingMessage'),
+      [{ text: t('common.ok') }]
     );
   };
 
@@ -76,7 +78,7 @@ export default function MeetingsSection() {
               color={viewType === 'upcoming' ? colors.primary : colors.textSecondary}
               fontWeight={viewType === 'upcoming' ? '$semibold' : '$normal'}
             >
-              Upcoming ({upcomingMeetings.length})
+              {t('crm.meetings.upcoming')} ({upcomingMeetings.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -91,7 +93,7 @@ export default function MeetingsSection() {
               color={viewType === 'past' ? colors.primary : colors.textSecondary}
               fontWeight={viewType === 'past' ? '$semibold' : '$normal'}
             >
-              Past ({pastMeetings.length})
+              {t('crm.meetings.past')} ({pastMeetings.length})
             </Text>
           </TouchableOpacity>
         </HStack>
@@ -116,10 +118,10 @@ export default function MeetingsSection() {
                   </Box>
                   <VStack>
                     <Text fontWeight="$semibold" color="white">
-                      Schedule a Meeting
+                      {t('crm.meetings.scheduleMeeting')}
                     </Text>
                     <Text size="sm" color="white" opacity={0.8}>
-                      Book time with your advisor
+                      {t('crm.meetings.bookTimeWithAdvisor')}
                     </Text>
                   </VStack>
                 </HStack>
@@ -134,7 +136,7 @@ export default function MeetingsSection() {
           <Box alignItems="center" paddingVertical="$8">
             <Ionicons name="calendar-outline" size={48} color={colors.textMuted} />
             <Text color={colors.textSecondary} marginTop="$2">
-              No {viewType} meetings
+              {viewType === 'upcoming' ? t('crm.meetings.noUpcoming') : t('crm.meetings.noPast')}
             </Text>
           </Box>
         ) : (
@@ -144,6 +146,7 @@ export default function MeetingsSection() {
               meeting={meeting}
               onPress={() => handleMeetingPress(meeting)}
               onJoin={() => handleJoinMeeting(meeting.meetingLink)}
+              t={t}
             />
           ))
         )}
@@ -172,7 +175,7 @@ export default function MeetingsSection() {
               borderBottomWidth={1}
               borderBottomColor={colors.border}
             >
-              <Heading size="md" color="white">Meeting Details</Heading>
+              <Heading size="md" color="white">{t('crm.meetings.meetingDetails')}</Heading>
               <TouchableOpacity onPress={() => setIsDetailVisible(false)}>
                 <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
@@ -214,7 +217,7 @@ export default function MeetingsSection() {
                       color={colors.primary}
                     />
                     <Text color="white">
-                      {selectedMeeting.isVirtual ? 'Virtual Meeting' : selectedMeeting.location}
+                      {selectedMeeting.isVirtual ? t('crm.meetings.virtualMeeting') : selectedMeeting.location}
                     </Text>
                   </HStack>
 
@@ -222,7 +225,7 @@ export default function MeetingsSection() {
 
                   <VStack space="sm">
                     <Text size="sm" fontWeight="$semibold" color={colors.textSecondary}>
-                      Attendees
+                      {t('crm.meetings.attendees')}
                     </Text>
                     {selectedMeeting.attendees.map((attendee, idx) => (
                       <HStack key={idx} space="sm" alignItems="center">
@@ -237,7 +240,7 @@ export default function MeetingsSection() {
                       <Divider bg={colors.border} />
                       <VStack space="sm">
                         <Text size="sm" fontWeight="$semibold" color={colors.textSecondary}>
-                          Meeting Notes
+                          {t('crm.meetings.meetingNotes')}
                         </Text>
                         <Box bg={colors.surface} padding="$3" borderRadius={borderRadius.md}>
                           <Text color="white">{selectedMeeting.notes}</Text>
@@ -253,7 +256,7 @@ export default function MeetingsSection() {
                       onPress={() => handleJoinMeeting(selectedMeeting.meetingLink)}
                     >
                       <Ionicons name="videocam" size={18} color="white" />
-                      <ButtonText marginLeft="$2">Join Meeting</ButtonText>
+                      <ButtonText marginLeft="$2">{t('crm.meetings.joinMeeting')}</ButtonText>
                     </Button>
                   )}
 
@@ -272,9 +275,10 @@ interface MeetingCardProps {
   meeting: Meeting;
   onPress: () => void;
   onJoin: () => void;
+  t: (key: string) => string;
 }
 
-function MeetingCard({ meeting, onPress, onJoin }: MeetingCardProps) {
+function MeetingCard({ meeting, onPress, onJoin, t }: MeetingCardProps) {
   const isPast = meeting.status === 'completed';
 
   return (
@@ -319,7 +323,7 @@ function MeetingCard({ meeting, onPress, onJoin }: MeetingCardProps) {
                 color={colors.textMuted}
               />
               <Text size="sm" color={colors.textMuted}>
-                {meeting.isVirtual ? 'Virtual' : meeting.location}
+                {meeting.isVirtual ? t('crm.meetings.virtual') : meeting.location}
               </Text>
             </HStack>
           </VStack>
@@ -327,7 +331,7 @@ function MeetingCard({ meeting, onPress, onJoin }: MeetingCardProps) {
           {meeting.status === 'scheduled' && meeting.isVirtual ? (
             <TouchableOpacity onPress={onJoin} style={styles.joinButton}>
               <Text size="sm" fontWeight="$semibold" color={colors.primary}>
-                Join
+                {t('crm.meetings.join')}
               </Text>
             </TouchableOpacity>
           ) : isPast ? (
@@ -338,7 +342,7 @@ function MeetingCard({ meeting, onPress, onJoin }: MeetingCardProps) {
               borderRadius={borderRadius.sm}
             >
               <Text size="xs" color={colors.textMuted}>
-                Completed
+                {t('crm.meetings.completed')}
               </Text>
             </Box>
           ) : null}

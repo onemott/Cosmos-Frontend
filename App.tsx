@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { CartProvider } from './src/contexts/CartContext';
+import { LanguageProvider } from './src/contexts/LanguageContext';
 import RootNavigator from './src/navigation/RootNavigator';
 
 const queryClient = new QueryClient({
@@ -23,11 +24,13 @@ export default function App() {
       <StatusBar style="light" />
       <QueryClientProvider client={queryClient}>
         <GluestackUIProvider config={config}>
-          <AuthProvider>
-            <CartProvider>
-              <RootNavigator />
-            </CartProvider>
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <CartProvider>
+                <RootNavigator />
+              </CartProvider>
+            </AuthProvider>
+          </LanguageProvider>
         </GluestackUIProvider>
       </QueryClientProvider>
     </SafeAreaProvider>

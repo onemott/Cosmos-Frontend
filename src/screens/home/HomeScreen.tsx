@@ -14,12 +14,15 @@ import { usePortfolioSummary, usePortfolioAllocation } from '../../api/hooks';
 import { formatCurrency, formatPercentage } from '../../utils/format';
 import { colors, spacing } from '../../config/theme';
 import { GradientCard } from '../../components/ui/GradientCard';
+import { useTranslation, useLocalizedDate } from '../../lib/i18n';
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function HomeScreen() {
   const { data: portfolio, isLoading, refetch, isRefetching } = usePortfolioSummary();
   const { data: allocation, isLoading: isLoadingAllocation } = usePortfolioAllocation();
+  const { t } = useTranslation();
+  const { formatFullDateTime } = useLocalizedDate();
 
   const handleRefresh = async () => {
     await refetch();
@@ -36,7 +39,7 @@ export default function HomeScreen() {
   if (!portfolio) {
     return (
       <Box flex={1} justifyContent="center" alignItems="center" bg={colors.background}>
-        <Text color={colors.textSecondary}>No portfolio data available</Text>
+        <Text color={colors.textSecondary}>{t('home.noPortfolioData')}</Text>
       </Box>
     );
   }
@@ -54,20 +57,20 @@ export default function HomeScreen() {
         <GradientCard variant="primary">
           <VStack space="sm">
             <Text size="sm" color="white" opacity={0.8}>
-              Total Net Worth
+              {t('home.totalNetWorth')}
             </Text>
             <Heading size="3xl" color="white">
               {formatCurrency(portfolio.net_worth, portfolio.currency)}
             </Heading>
             <HStack space="lg" marginTop="$2">
               <VStack>
-                <Text size="xs" color="white" opacity={0.7}>Invested</Text>
+                <Text size="xs" color="white" opacity={0.7}>{t('home.invested')}</Text>
                 <Text size="sm" fontWeight="$semibold" color="white">
                   {formatCurrency(portfolio.invested_value, portfolio.currency)}
                 </Text>
               </VStack>
               <VStack>
-                <Text size="xs" color="white" opacity={0.7}>Cash</Text>
+                <Text size="xs" color="white" opacity={0.7}>{t('home.cash')}</Text>
                 <Text size="sm" fontWeight="$semibold" color="white">
                   {formatCurrency(portfolio.cash_balance, portfolio.currency)}
                 </Text>
@@ -79,7 +82,7 @@ export default function HomeScreen() {
         {/* Asset Allocation Chart */}
         <GradientCard variant="dark">
           <VStack space="md">
-            <Heading size="md" color="white">Asset Allocation</Heading>
+            <Heading size="md" color="white">{t('home.assetAllocation')}</Heading>
             {isLoadingAllocation ? (
               <Box alignItems="center" paddingVertical="$6">
                 <Spinner size="small" color={colors.primary} />
@@ -126,7 +129,7 @@ export default function HomeScreen() {
               </>
             ) : (
               <Text size="sm" color={colors.textSecondary} textAlign="center">
-                No allocation data available
+                {t('home.noAllocationData')}
               </Text>
             )}
           </VStack>
@@ -135,7 +138,7 @@ export default function HomeScreen() {
         {/* Currency Breakdown */}
         <GradientCard variant="dark">
           <VStack space="md">
-            <Heading size="md" color="white">Currency Exposure</Heading>
+            <Heading size="md" color="white">{t('home.currencyExposure')}</Heading>
             {allocation?.currency && allocation.currency.length > 0 ? (
               <VStack space="sm">
                 {allocation.currency.map((item, index) => {
@@ -172,7 +175,7 @@ export default function HomeScreen() {
               </VStack>
             ) : (
               <Text size="sm" color={colors.textSecondary} textAlign="center">
-                No currency data available
+                {t('home.noCurrencyData')}
               </Text>
             )}
           </VStack>
@@ -181,7 +184,7 @@ export default function HomeScreen() {
         {/* Top Holdings */}
         <GradientCard variant="dark">
           <VStack space="md">
-            <Heading size="md" color="white">Top Holdings</Heading>
+            <Heading size="md" color="white">{t('home.topHoldings')}</Heading>
             {allocation?.topHoldings && allocation.topHoldings.length > 0 ? (
               <VStack space="sm">
                 {allocation.topHoldings.map((holding, index) => (
@@ -213,7 +216,7 @@ export default function HomeScreen() {
               </VStack>
             ) : (
               <Text size="sm" color={colors.textSecondary} textAlign="center">
-                No holdings data available
+                {t('home.noHoldingsData')}
               </Text>
             )}
           </VStack>
@@ -222,7 +225,7 @@ export default function HomeScreen() {
         {/* Performance Card */}
         <GradientCard variant="dark">
           <VStack space="md">
-            <Heading size="md" color="white">Performance</Heading>
+            <Heading size="md" color="white">{t('home.performance')}</Heading>
             <HStack justifyContent="space-around">
               <PerformanceMetric label="1M" value={portfolio.performance?.['1M'] ?? null} />
               <PerformanceMetric label="3M" value={portfolio.performance?.['3M'] ?? null} />
@@ -238,7 +241,7 @@ export default function HomeScreen() {
           <View style={{ flex: 1 }}>
             <GradientCard variant="dark" style={{ marginBottom: 0 }}>
               <VStack alignItems="center" space="xs">
-                <Text size="xs" color={colors.textSecondary}>Accounts</Text>
+                <Text size="xs" color={colors.textSecondary}>{t('home.accounts')}</Text>
                 <Text size="3xl" fontWeight="$bold" color={colors.primary}>
                   {portfolio.total_accounts}
                 </Text>
@@ -248,7 +251,7 @@ export default function HomeScreen() {
           <View style={{ flex: 1 }}>
             <GradientCard variant="dark" style={{ marginBottom: 0 }}>
               <VStack alignItems="center" space="xs">
-                <Text size="xs" color={colors.textSecondary}>Holdings</Text>
+                <Text size="xs" color={colors.textSecondary}>{t('home.holdings')}</Text>
                 <Text size="3xl" fontWeight="$bold" color={colors.primary}>
                   {portfolio.total_holdings}
                 </Text>
@@ -260,7 +263,7 @@ export default function HomeScreen() {
         {/* Last Updated */}
         <Box alignItems="center" paddingTop="$2" paddingBottom="$4">
           <Text size="xs" color={colors.textMuted}>
-            Last updated: {new Date(portfolio.last_updated).toLocaleString()}
+            {t('common.lastUpdated')}: {formatFullDateTime(portfolio.last_updated)}
           </Text>
         </Box>
       </VStack>

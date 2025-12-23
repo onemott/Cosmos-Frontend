@@ -5,8 +5,10 @@ import {
   Platform,
   Alert,
   TouchableWithoutFeedback,
+  TouchableOpacity,
   Keyboard,
   ScrollView,
+  Modal,
 } from 'react-native';
 import {
   Box,
@@ -30,6 +32,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors, spacing, borderRadius } from '../../config/theme';
 import { useValidateInvitation, useRegisterWithInvitation } from '../../api/hooks';
+import { useTranslation } from '../../lib/i18n';
+import { useLanguage, LANGUAGES, Language } from '../../contexts/LanguageContext';
 import type { AuthStackScreenProps } from '../../navigation/types';
 
 type RegisterScreenProps = AuthStackScreenProps<'Register'>;
@@ -37,6 +41,11 @@ type RegisterScreenProps = AuthStackScreenProps<'Register'>;
 export default function RegisterScreen() {
   const navigation = useNavigation<RegisterScreenProps['navigation']>();
   const route = useRoute<RegisterScreenProps['route']>();
+  const { t } = useTranslation();
+  const { language, setLanguage } = useLanguage();
+  
+  // Language modal state
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
   
   // Step tracking
   const [step, setStep] = useState<'code' | 'form'>('code');
@@ -101,37 +110,42 @@ export default function RegisterScreen() {
   
   const handleValidateCode = () => {
     if (invitationCode.replace(/-/g, '').length !== 9) {
-      setCodeError('Please enter a valid 9-character code');
+      setCodeError(t('register.invalidCodeLength'));
       return;
     }
     
     if (invitationData?.valid) {
       setStep('form');
     } else {
-      setCodeError(invitationData?.error || 'Invalid invitation code');
+      setCodeError(invitationData?.error || t('register.invalidCode'));
     }
+  };
+  
+  const handleLanguageChange = async (newLanguage: Language) => {
+    await setLanguage(newLanguage);
+    setLanguageModalVisible(false);
   };
   
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
     
-    if (!firstName.trim()) errors.firstName = 'First name is required';
-    if (!lastName.trim()) errors.lastName = 'Last name is required';
+    if (!firstName.trim()) errors.firstName = t('register.firstNameRequired');
+    if (!lastName.trim()) errors.lastName = t('register.lastNameRequired');
     
     if (!email.trim()) {
-      errors.email = 'Email is required';
+      errors.email = t('auth.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = 'Please enter a valid email';
+      errors.email = t('auth.validEmail');
     }
     
     if (!password) {
-      errors.password = 'Password is required';
+      errors.password = t('auth.passwordRequired');
     } else if (password.length < 8) {
-      errors.password = 'Password must be at least 8 characters';
+      errors.password = t('register.passwordMinLength');
     }
     
     if (password !== confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+      errors.confirmPassword = t('register.passwordMismatch');
     }
     
     setFormErrors(errors);
@@ -154,21 +168,35 @@ export default function RegisterScreen() {
       });
       
       Alert.alert(
-        'Registration Successful!',
-        'Your account has been created. You can now log in.',
-        [{ text: 'Go to Login', onPress: () => navigation.navigate('Login') }]
+        t('register.registrationSuccess'),
+        t('register.registrationSuccessMessage'),
+        [{ text: t('register.goToLogin'), onPress: () => navigation.navigate('Login') }]
       );
     } catch (error: unknown) {
       const axiosError = error as { response?: { data?: { detail?: string } } };
       Alert.alert(
-        'Registration Failed',
-        axiosError.response?.data?.detail || 'Something went wrong. Please try again.'
+        t('register.registrationFailed'),
+        axiosError.response?.data?.detail || t('register.somethingWentWrong')
       );
     }
   };
   
   const renderCodeStep = () => (
     <VStack space="xl">
+      {/* Language Switcher */}
+      <TouchableOpacity
+        onPress={() => setLanguageModalVisible(true)}
+        style={styles.languageButton}
+      >
+        <HStack space="xs" alignItems="center">
+          <Ionicons name="globe-outline" size={18} color={colors.textSecondary} />
+          <Text color={colors.textSecondary} size="sm">
+            {LANGUAGES.find(l => l.code === language)?.nativeName || 'English'}
+          </Text>
+          <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
+        </HStack>
+      </TouchableOpacity>
+      
       {/* Header */}
       <VStack space="sm" alignItems="center" marginBottom="$4">
         <Box
@@ -180,10 +208,10 @@ export default function RegisterScreen() {
           <Ionicons name="ticket-outline" size={40} color={colors.primary} />
         </Box>
         <Heading size="2xl" color="white" textAlign="center">
-          Enter Invitation Code
+          {t('register.enterInvitationCode')}
         </Heading>
         <Text size="md" color={colors.textSecondary} textAlign="center">
-          Your advisor sent you a code to register
+          {t('register.advisorSentCode')}
         </Text>
       </VStack>
       
@@ -191,7 +219,7 @@ export default function RegisterScreen() {
       <FormControl isInvalid={!!codeError}>
         <FormControlLabel>
           <FormControlLabelText color={colors.textSecondary}>
-            Invitation Code
+            {t('register.invitationCode')}
           </FormControlLabelText>
         </FormControlLabel>
         <Input
@@ -226,7 +254,7 @@ export default function RegisterScreen() {
       {isValidating && (
         <HStack space="sm" justifyContent="center" alignItems="center">
           <Spinner size="small" color={colors.primary} />
-          <Text color={colors.textSecondary}>Validating code...</Text>
+          <Text color={colors.textSecondary}>{t('register.validatingCode')}</Text>
         </HStack>
       )}
       
@@ -240,10 +268,10 @@ export default function RegisterScreen() {
         >
           <HStack space="sm" alignItems="center" marginBottom="$2">
             <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-            <Text color={colors.success} fontWeight="$semibold">Valid Invitation</Text>
+            <Text color={colors.success} fontWeight="$semibold">{t('register.validInvitation')}</Text>
           </HStack>
           <Text color={colors.textSecondary} size="sm">
-            From: {invitationData.tenant_name}
+            {t('register.from')}: {invitationData.tenant_name}
           </Text>
           {invitationData.message && (
             <Text color={colors.textSecondary} size="sm" marginTop="$2" fontStyle="italic">
@@ -286,7 +314,7 @@ export default function RegisterScreen() {
           style={styles.buttonGradient}
         >
           <ButtonText fontWeight="$bold" color="white">
-            Continue
+            {t('register.continue')}
           </ButtonText>
         </LinearGradient>
       </Button>
@@ -298,7 +326,7 @@ export default function RegisterScreen() {
         marginTop="$4"
       >
         <ButtonText color={colors.textSecondary}>
-          Already have an account? Log in
+          {t('register.alreadyHaveAccount')}
         </ButtonText>
       </Button>
     </VStack>
@@ -309,10 +337,10 @@ export default function RegisterScreen() {
       {/* Header */}
       <VStack space="sm" alignItems="center" marginBottom="$2">
         <Heading size="xl" color="white" textAlign="center">
-          Create Your Account
+          {t('register.createYourAccount')}
         </Heading>
         <Text size="sm" color={colors.textSecondary} textAlign="center">
-          Joining {invitationData?.tenant_name}
+          {t('register.joining')} {invitationData?.tenant_name}
         </Text>
       </VStack>
       
@@ -320,11 +348,11 @@ export default function RegisterScreen() {
       <HStack space="md">
         <FormControl flex={1} isInvalid={!!formErrors.firstName}>
           <FormControlLabel>
-            <FormControlLabelText color={colors.textSecondary}>First Name</FormControlLabelText>
+            <FormControlLabelText color={colors.textSecondary}>{t('register.firstName')}</FormControlLabelText>
           </FormControlLabel>
           <Input variant="outline" size="md" borderRadius="$lg" borderColor={colors.border} bg={colors.surfaceHighlight}>
             <InputField
-              placeholder="John"
+              placeholder={t('register.firstNamePlaceholder')}
               placeholderTextColor={colors.textMuted}
               color="white"
               value={firstName}
@@ -341,11 +369,11 @@ export default function RegisterScreen() {
         
         <FormControl flex={1} isInvalid={!!formErrors.lastName}>
           <FormControlLabel>
-            <FormControlLabelText color={colors.textSecondary}>Last Name</FormControlLabelText>
+            <FormControlLabelText color={colors.textSecondary}>{t('register.lastName')}</FormControlLabelText>
           </FormControlLabel>
           <Input variant="outline" size="md" borderRadius="$lg" borderColor={colors.border} bg={colors.surfaceHighlight}>
             <InputField
-              placeholder="Smith"
+              placeholder={t('register.lastNamePlaceholder')}
               placeholderTextColor={colors.textMuted}
               color="white"
               value={lastName}
@@ -364,11 +392,11 @@ export default function RegisterScreen() {
       {/* Email */}
       <FormControl isInvalid={!!formErrors.email}>
         <FormControlLabel>
-          <FormControlLabelText color={colors.textSecondary}>Email</FormControlLabelText>
+          <FormControlLabelText color={colors.textSecondary}>{t('auth.email')}</FormControlLabelText>
         </FormControlLabel>
         <Input variant="outline" size="md" borderRadius="$lg" borderColor={colors.border} bg={colors.surfaceHighlight}>
           <InputField
-            placeholder="john@example.com"
+            placeholder={t('register.emailPlaceholder')}
             placeholderTextColor={colors.textMuted}
             color="white"
             value={email}
@@ -389,7 +417,7 @@ export default function RegisterScreen() {
       <FormControl>
         <FormControlLabel>
           <FormControlLabelText color={colors.textSecondary}>
-            Phone <Text color={colors.textMuted}>(optional)</Text>
+            {t('register.phone')} <Text color={colors.textMuted}>({t('register.optional')})</Text>
           </FormControlLabelText>
         </FormControlLabel>
         <Input variant="outline" size="md" borderRadius="$lg" borderColor={colors.border} bg={colors.surfaceHighlight}>
@@ -408,11 +436,11 @@ export default function RegisterScreen() {
       {/* Password */}
       <FormControl isInvalid={!!formErrors.password}>
         <FormControlLabel>
-          <FormControlLabelText color={colors.textSecondary}>Password</FormControlLabelText>
+          <FormControlLabelText color={colors.textSecondary}>{t('auth.password')}</FormControlLabelText>
         </FormControlLabel>
         <Input variant="outline" size="md" borderRadius="$lg" borderColor={colors.border} bg={colors.surfaceHighlight}>
           <InputField
-            placeholder="Min. 8 characters"
+            placeholder={t('register.passwordPlaceholder')}
             placeholderTextColor={colors.textMuted}
             color="white"
             value={password}
@@ -431,11 +459,11 @@ export default function RegisterScreen() {
       {/* Confirm Password */}
       <FormControl isInvalid={!!formErrors.confirmPassword}>
         <FormControlLabel>
-          <FormControlLabelText color={colors.textSecondary}>Confirm Password</FormControlLabelText>
+          <FormControlLabelText color={colors.textSecondary}>{t('register.confirmPassword')}</FormControlLabelText>
         </FormControlLabel>
         <Input variant="outline" size="md" borderRadius="$lg" borderColor={colors.border} bg={colors.surfaceHighlight}>
           <InputField
-            placeholder="Re-enter password"
+            placeholder={t('register.confirmPasswordPlaceholder')}
             placeholderTextColor={colors.textMuted}
             color="white"
             value={confirmPassword}
@@ -469,7 +497,7 @@ export default function RegisterScreen() {
           style={styles.buttonGradient}
         >
           <ButtonText fontWeight="$bold" color="white">
-            {registerMutation.isPending ? 'Creating Account...' : 'Create Account'}
+            {registerMutation.isPending ? t('register.creatingAccount') : t('register.createAccount')}
           </ButtonText>
         </LinearGradient>
       </Button>
@@ -483,7 +511,7 @@ export default function RegisterScreen() {
         <HStack space="xs" alignItems="center">
           <Ionicons name="arrow-back" size={16} color={colors.textSecondary} />
           <ButtonText color={colors.textSecondary}>
-            Back to invitation code
+            {t('register.backToInvitationCode')}
           </ButtonText>
         </HStack>
       </Button>
@@ -510,6 +538,52 @@ export default function RegisterScreen() {
             </Box>
           </ScrollView>
         </LinearGradient>
+        
+        {/* Language Selector Modal */}
+        <Modal
+          visible={languageModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setLanguageModalVisible(false)}
+        >
+          <Box flex={1} justifyContent="flex-end" bg="rgba(0,0,0,0.7)">
+            <Box
+              bg={colors.surface}
+              borderTopLeftRadius={borderRadius.xl}
+              borderTopRightRadius={borderRadius.xl}
+              padding="$6"
+              paddingBottom={spacing.xl + 20}
+              borderWidth={1}
+              borderColor={colors.border}
+            >
+              <HStack justifyContent="space-between" alignItems="center" marginBottom="$4">
+                <Heading size="lg" color="white">{t('profile.languageModal.title')}</Heading>
+                <TouchableOpacity onPress={() => setLanguageModalVisible(false)}>
+                  <Ionicons name="close" size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </HStack>
+
+              <VStack space="md">
+                {LANGUAGES.map((langOption) => (
+                  <TouchableOpacity
+                    key={langOption.code}
+                    onPress={() => handleLanguageChange(langOption.code)}
+                    style={styles.languageOption}
+                  >
+                    <HStack justifyContent="space-between" alignItems="center">
+                      <Text color="white" size="md">
+                        {langOption.nativeName}
+                      </Text>
+                      {language === langOption.code && (
+                        <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                      )}
+                    </HStack>
+                  </TouchableOpacity>
+                ))}
+              </VStack>
+            </Box>
+          </Box>
+        </Modal>
       </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
   );
@@ -537,6 +611,19 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  languageButton: {
+    alignSelf: 'flex-end',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surfaceHighlight,
+  },
+  languageOption: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surfaceHighlight,
   },
 });
 

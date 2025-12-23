@@ -15,12 +15,14 @@ import { useAccounts } from '../../api/hooks';
 import { formatCurrency } from '../../utils/format';
 import { colors, spacing } from '../../config/theme';
 import { GradientCard } from '../../components/ui/GradientCard';
+import { useTranslation } from '../../lib/i18n';
 import type { Account } from '../../types/api';
 import type { AccountsNavigationProp } from '../../navigation/types';
 
 export default function AccountsListScreen() {
   const navigation = useNavigation<AccountsNavigationProp>();
   const { data: accounts, isLoading, refetch, isRefetching } = useAccounts();
+  const { t } = useTranslation();
 
   const handleAccountPress = (account: Account) => {
     navigation.navigate('AccountDetail', {
@@ -42,7 +44,7 @@ export default function AccountsListScreen() {
       <Box flex={1} justifyContent="center" alignItems="center" bg={colors.background} padding="$4">
         <Ionicons name="wallet-outline" size={64} color={colors.textSecondary} />
         <Text size="lg" color={colors.textSecondary} marginTop="$4">
-          No accounts found
+          {t('accounts.noAccounts')}
         </Text>
       </Box>
     );
@@ -79,19 +81,19 @@ export default function AccountsListScreen() {
                   borderRadius="$full"
                   bg={item.is_active ? colors.success : colors.textMuted}
                 >
-                  <BadgeText color="white">{item.is_active ? 'Active' : 'Inactive'}</BadgeText>
+                  <BadgeText color="white">{item.is_active ? t('common.active') : t('common.inactive')}</BadgeText>
                 </Badge>
               </HStack>
 
               <HStack justifyContent="space-between" marginTop="$3">
                 <VStack>
-                  <Text size="xs" color={colors.textSecondary}>Total Value</Text>
+                  <Text size="xs" color={colors.textSecondary}>{t('accounts.totalValue')}</Text>
                   <Text size="xl" fontWeight="$bold" color="white">
                     {formatCurrency(item.total_value, item.currency)}
                   </Text>
                 </VStack>
                 <VStack alignItems="flex-end">
-                  <Text size="xs" color={colors.textSecondary}>Cash Balance</Text>
+                  <Text size="xs" color={colors.textSecondary}>{t('accounts.cashBalance')}</Text>
                   <Text size="md" color={colors.textSecondary}>
                     {formatCurrency(item.cash_balance, item.currency)}
                   </Text>

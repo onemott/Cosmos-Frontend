@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Box, HStack, Text } from '@gluestack-ui/themed';
 import { colors, spacing, borderRadius } from '../../config/theme';
+import { useTranslation } from '../../lib/i18n';
 import DocumentsSection from './sections/DocumentsSection';
 import TasksSection from './sections/TasksSection';
 import CalendarSection from './sections/CalendarSection';
@@ -9,15 +10,16 @@ import MeetingsSection from './sections/MeetingsSection';
 
 type CRMTab = 'documents' | 'tasks' | 'calendar' | 'meetings';
 
-const TABS: { key: CRMTab; label: string }[] = [
-  { key: 'documents', label: 'Docs' },
-  { key: 'tasks', label: 'Tasks' },
-  { key: 'calendar', label: 'Calendar' },
-  { key: 'meetings', label: 'Meetings' },
-];
-
 export default function CRMScreen() {
   const [activeTab, setActiveTab] = useState<CRMTab>('tasks');
+  const { t } = useTranslation();
+
+  const TABS: { key: CRMTab; label: string }[] = [
+    { key: 'documents', label: t('crm.tabs.documents') },
+    { key: 'tasks', label: t('crm.tabs.tasks') },
+    { key: 'calendar', label: t('crm.tabs.calendar') },
+    { key: 'meetings', label: t('crm.tabs.meetings') },
+  ];
 
   const renderContent = () => {
     switch (activeTab) {

@@ -59,6 +59,22 @@ export const useChangePassword = () => {
   });
 };
 
+export const useUpdateLanguage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (language: string) => {
+      const response = await apiClient.patch<ClientProfile>(
+        '/client/auth/language',
+        { language }
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clientProfile'] });
+    },
+  });
+};
+
 export const useClientProfile = (enabled: boolean = true) => {
   return useQuery({
     queryKey: ['clientProfile'],

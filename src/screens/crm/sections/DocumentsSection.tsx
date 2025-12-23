@@ -18,6 +18,7 @@ import { colors, spacing, borderRadius } from '../../../config/theme';
 import { DocumentCard } from '../../../components/crm/DocumentCard';
 import { DocumentViewer } from '../../../components/documents/DocumentViewer';
 import { useDocuments, getDocumentDownloadUrl, getAccessToken } from '../../../api/hooks';
+import { useTranslation } from '../../../lib/i18n';
 import type { Document } from '../../../types/api';
 
 // Optional dependencies for download/share
@@ -59,15 +60,16 @@ async function downloadFile(
   }
 }
 
-const DOCUMENT_FILTERS = [
-  { key: undefined, label: 'All' },
-  { key: 'statement', label: 'Statements' },
-  { key: 'report', label: 'Reports' },
-  { key: 'contract', label: 'Contracts' },
-  { key: 'tax', label: 'Tax' },
-];
-
 export default function DocumentsSection() {
+  const { t } = useTranslation();
+  
+  const DOCUMENT_FILTERS = [
+    { key: undefined, label: t('common.all') },
+    { key: 'statement', label: t('crm.documents.statements') },
+    { key: 'report', label: t('crm.documents.reports') },
+    { key: 'contract', label: t('crm.documents.contracts') },
+    { key: 'tax', label: t('crm.documents.tax') },
+  ];
   const [filterType, setFilterType] = useState<string | undefined>(undefined);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [isViewerVisible, setIsViewerVisible] = useState(false);
@@ -94,9 +96,9 @@ export default function DocumentsSection() {
 
     if (!ExpoFS?.File || !ExpoFS?.Paths) {
       Alert.alert(
-        'Not Available',
-        'Download functionality requires expo-file-system. Please install it to enable downloads.',
-        [{ text: 'OK' }]
+        t('crm.documents.notAvailable'),
+        t('crm.documents.downloadNotAvailable'),
+        [{ text: t('common.ok') }]
       );
       return;
     }
@@ -115,9 +117,9 @@ export default function DocumentsSection() {
 
       if (downloadResult.status === 200) {
         Alert.alert(
-          'Download Complete',
-          `${selectedDocument.name} has been saved to your device.`,
-          [{ text: 'OK' }]
+          t('crm.documents.downloadComplete'),
+          t('crm.documents.downloadCompleteMessage', { name: selectedDocument.name }),
+          [{ text: t('common.ok') }]
         );
       } else {
         throw new Error(`Download failed with status ${downloadResult.status}`);
@@ -125,9 +127,9 @@ export default function DocumentsSection() {
     } catch (error) {
       console.error('Download error:', error);
       Alert.alert(
-        'Download Failed',
-        'Unable to download the document. Please try again.',
-        [{ text: 'OK' }]
+        t('crm.documents.downloadFailed'),
+        t('crm.documents.downloadFailedMessage'),
+        [{ text: t('common.ok') }]
       );
     } finally {
       setIsDownloading(false);
@@ -139,9 +141,9 @@ export default function DocumentsSection() {
 
     if (!ExpoFS?.File || !ExpoFS?.Paths || !Sharing) {
       Alert.alert(
-        'Not Available',
-        'Sharing functionality requires expo-file-system and expo-sharing. Please install them to enable sharing.',
-        [{ text: 'OK' }]
+        t('crm.documents.notAvailable'),
+        t('crm.documents.shareNotAvailableInstall'),
+        [{ text: t('common.ok') }]
       );
       return;
     }
@@ -149,7 +151,7 @@ export default function DocumentsSection() {
     // Check if sharing is available on this platform
     const isAvailable = await Sharing.isAvailableAsync();
     if (!isAvailable) {
-      Alert.alert('Not Available', 'Sharing is not available on this device.', [{ text: 'OK' }]);
+      Alert.alert(t('crm.documents.notAvailable'), t('crm.documents.shareNotAvailable'), [{ text: t('common.ok') }]);
       return;
     }
 
@@ -176,8 +178,8 @@ export default function DocumentsSection() {
       }
     } catch (error) {
       console.error('Share error:', error);
-      Alert.alert('Share Failed', 'Unable to share the document. Please try again.', [
-        { text: 'OK' },
+      Alert.alert(t('crm.documents.shareFailed'), t('crm.documents.shareFailedMessage'), [
+        { text: t('common.ok') },
       ]);
     } finally {
       setIsDownloading(false);
@@ -244,7 +246,7 @@ export default function DocumentsSection() {
           <Box alignItems="center" paddingVertical="$8">
             <Ionicons name="document-outline" size={48} color={colors.textMuted} />
             <Text color={colors.textSecondary} marginTop="$2">
-              No documents found
+              {t('crm.documents.noDocuments')}
             </Text>
           </Box>
         ) : (
@@ -288,7 +290,7 @@ export default function DocumentsSection() {
           <Box bg={colors.surface} padding="$6" borderRadius={borderRadius.lg}>
             <Spinner size="large" color={colors.primary} />
             <Text color={colors.textSecondary} marginTop="$3">
-              Processing...
+              {t('common.processing')}
             </Text>
           </Box>
         </Box>

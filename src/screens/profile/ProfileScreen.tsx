@@ -31,21 +31,25 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../config/theme';
 import { useAuth } from '../../contexts/AuthContext';
-import { useChangePassword } from '../../api/hooks';
-import { format } from 'date-fns';
+import { useLanguage, LANGUAGES, Language } from '../../contexts/LanguageContext';
+import { useChangePassword, useUpdateLanguage } from '../../api/hooks';
+import { useTranslation, useLocalizedDate } from '../../lib/i18n';
 
-const RISK_PROFILE_CONFIG: Record<string, { color: string; label: string }> = {
-  conservative: { color: colors.success, label: 'Conservative' },
-  moderate: { color: colors.primary, label: 'Moderate' },
-  balanced: { color: '#3B82F6', label: 'Balanced' },
-  growth: { color: colors.warning, label: 'Growth' },
-  aggressive: { color: colors.error, label: 'Aggressive' },
+const RISK_PROFILE_COLORS: Record<string, string> = {
+  conservative: colors.success,
+  moderate: colors.primary,
+  balanced: '#3B82F6',
+  growth: colors.warning,
+  aggressive: colors.error,
 };
 
 const APP_VERSION = '1.0.0 (MVP)';
 
 export default function ProfileScreen() {
   const { user: profile, isLoading, logout } = useAuth();
+  const { language, setLanguage } = useLanguage();
+  const { t } = useTranslation();
+  const { formatMonthYear, formatDateTime } = useLocalizedDate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   // Change password state
@@ -55,7 +59,11 @@ export default function ProfileScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
   
+  // Language modal state
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  
   const changePasswordMutation = useChangePassword();
+  const updateLanguageMutation = useUpdateLanguage();
 
   const resetPasswordForm = () => {
     setCurrentPassword('');
@@ -68,21 +76,21 @@ export default function ProfileScreen() {
     const errors: Record<string, string> = {};
     
     if (!currentPassword) {
-      errors.currentPassword = 'Current password is required';
+      errors.currentPassword = t('profile.changePasswordModal.errorRequired');
     }
     
     if (!newPassword) {
-      errors.newPassword = 'New password is required';
+      errors.newPassword = t('profile.changePasswordModal.errorNewRequired');
     } else if (newPassword.length < 8) {
-      errors.newPassword = 'Password must be at least 8 characters';
+      errors.newPassword = t('profile.changePasswordModal.errorMinLength');
     }
     
     if (newPassword !== confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+      errors.confirmPassword = t('profile.changePasswordModal.errorMismatch');
     }
     
     if (currentPassword === newPassword) {
-      errors.newPassword = 'New password must be different from current';
+      errors.newPassword = t('profile.changePasswordModal.errorSame');
     }
     
     setPasswordErrors(errors);
@@ -102,16 +110,16 @@ export default function ProfileScreen() {
       resetPasswordForm();
       
       Alert.alert(
-        'Success',
-        'Your password has been changed successfully.',
-        [{ text: 'OK' }]
+        t('common.success'),
+        t('profile.changePasswordModal.success'),
+        [{ text: t('common.ok') }]
       );
     } catch (error: unknown) {
       const axiosError = error as { response?: { data?: { detail?: string } } };
       const errorMessage = axiosError.response?.data?.detail || 'Failed to change password';
       
       if (errorMessage.toLowerCase().includes('current password')) {
-        setPasswordErrors({ currentPassword: 'Current password is incorrect' });
+        setPasswordErrors({ currentPassword: t('profile.changePasswordModal.errorCurrent') });
       } else {
         Alert.alert('Error', errorMessage);
       }
@@ -120,12 +128,12 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      t('auth.logout'),
+      t('profile.logoutConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Logout',
+          text: t('auth.logout'),
           style: 'destructive',
           onPress: async () => {
             setIsLoggingOut(true);
@@ -146,18 +154,34 @@ export default function ProfileScreen() {
 
   const handleContactSupport = () => {
     Alert.alert(
-      'Contact Support',
-      'Please contact your advisor for assistance:\n\nEmail: support@cosmos-wealth.com\nPhone: +1 (555) 123-4567',
-      [{ text: 'OK' }]
+      t('profile.contactSupport'),
+      t('profile.contactSupportMessage'),
+      [{ text: t('common.ok') }]
     );
   };
 
   const handleComingSoon = (feature: string) => {
     Alert.alert(
-      'Coming Soon',
+      t('common.comingSoon'),
       `${feature} will be available in a future update.`,
-      [{ text: 'OK' }]
+      [{ text: t('common.ok') }]
     );
+  };
+
+  const handleLanguageChange = async (newLanguage: Language) => {
+    try {
+      // Update local state first for immediate UI feedback
+      await setLanguage(newLanguage);
+      
+      // Sync to backend
+      await updateLanguageMutation.mutateAsync(newLanguage);
+      
+      setLanguageModalVisible(false);
+    } catch (error) {
+      console.error('Failed to update language:', error);
+      // Local state is already updated, which is fine for offline-first UX
+      setLanguageModalVisible(false);
+    }
   };
 
   if (isLoading) {
@@ -171,7 +195,7 @@ export default function ProfileScreen() {
   if (!profile) {
     return (
       <Box flex={1} justifyContent="center" alignItems="center" bg={colors.background}>
-        <Text color={colors.textSecondary}>Failed to load profile</Text>
+        <Text color={colors.textSecondary}>{t('profile.failedToLoad')}</Text>
       </Box>
     );
   }
@@ -186,7 +210,9 @@ export default function ProfileScreen() {
   };
 
   const initials = getInitials(profile.client_name);
-  const riskConfig = RISK_PROFILE_CONFIG[profile.risk_profile?.toLowerCase() || 'balanced'];
+  const riskProfileKey = profile.risk_profile?.toLowerCase() || 'balanced';
+  const riskProfileColor = RISK_PROFILE_COLORS[riskProfileKey] || colors.textMuted;
+  const riskProfileLabel = t(`profile.riskProfiles.${riskProfileKey}`);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -223,7 +249,7 @@ export default function ProfileScreen() {
               borderRadius="$full"
             >
               <BadgeText color="white">
-                {profile.is_active ? 'Active' : 'Inactive'}
+                {profile.is_active ? t('common.active') : t('common.inactive')}
               </BadgeText>
             </Badge>
             {profile.mfa_enabled && (
@@ -238,7 +264,7 @@ export default function ProfileScreen() {
         {/* Account Information */}
         <Box style={styles.section}>
           <Heading size="sm" color="white" marginBottom="$3">
-            Account Information
+            {t('profile.accountInfo')}
           </Heading>
           
           <VStack space="md">
@@ -246,10 +272,10 @@ export default function ProfileScreen() {
             <HStack justifyContent="space-between" alignItems="center">
               <HStack alignItems="center" space="sm">
                 <Ionicons name="business-outline" size={18} color={colors.textMuted} />
-                <Text color={colors.textSecondary}>Wealth Manager</Text>
+                <Text color={colors.textSecondary}>{t('profile.wealthManager')}</Text>
               </HStack>
               <Text color="white" fontWeight="$medium">
-                {profile.tenant_name || 'Platform Operator'}
+                {profile.tenant_name || t('profile.platformOperator')}
               </Text>
             </HStack>
 
@@ -261,14 +287,14 @@ export default function ProfileScreen() {
                 <HStack justifyContent="space-between" alignItems="center">
                   <HStack alignItems="center" space="sm">
                     <Ionicons name="analytics-outline" size={18} color={colors.textMuted} />
-                    <Text color={colors.textSecondary}>Risk Profile</Text>
+                    <Text color={colors.textSecondary}>{t('profile.riskProfile')}</Text>
                   </HStack>
                   <Badge
                     size="sm"
-                    bg={riskConfig?.color || colors.textMuted}
+                    bg={riskProfileColor}
                     borderRadius="$full"
                   >
-                    <BadgeText color="white">{riskConfig?.label || 'N/A'}</BadgeText>
+                    <BadgeText color="white">{riskProfileLabel}</BadgeText>
                   </Badge>
                 </HStack>
                 <Divider bg={colors.border} />
@@ -279,10 +305,10 @@ export default function ProfileScreen() {
             <HStack justifyContent="space-between" alignItems="center">
               <HStack alignItems="center" space="sm">
                 <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
-                <Text color={colors.textSecondary}>Member Since</Text>
+                <Text color={colors.textSecondary}>{t('profile.memberSince')}</Text>
               </HStack>
               <Text color="white" fontWeight="$medium">
-                {format(new Date(profile.created_at), 'MMM yyyy')}
+                {formatMonthYear(profile.created_at)}
               </Text>
             </HStack>
 
@@ -292,10 +318,10 @@ export default function ProfileScreen() {
                 <HStack justifyContent="space-between" alignItems="center">
                   <HStack alignItems="center" space="sm">
                     <Ionicons name="time-outline" size={18} color={colors.textMuted} />
-                    <Text color={colors.textSecondary}>Last Login</Text>
+                    <Text color={colors.textSecondary}>{t('profile.lastLogin')}</Text>
                   </HStack>
                   <Text color="white" fontWeight="$medium">
-                    {format(new Date(profile.last_login_at), 'MMM d, HH:mm')}
+                    {formatDateTime(profile.last_login_at)}
                   </Text>
                 </HStack>
               </>
@@ -306,25 +332,25 @@ export default function ProfileScreen() {
         {/* App Settings */}
         <Box style={styles.section}>
           <Heading size="sm" color="white" marginBottom="$3">
-            App Settings
+            {t('profile.appSettings')}
           </Heading>
           
           <VStack space="sm">
             <MenuItem
               icon="notifications-outline"
-              label="Notifications"
+              label={t('profile.notifications')}
               isDisabled
-              onPress={() => handleComingSoon('Notifications')}
+              onPress={() => handleComingSoon(t('profile.notifications'))}
             />
-            <MenuItem
+            <LanguageMenuItem
               icon="language-outline"
-              label="Language"
-              isDisabled
-              onPress={() => handleComingSoon('Language Settings')}
+              label={t('profile.language')}
+              currentLanguage={LANGUAGES.find(l => l.code === language)?.nativeName || 'English'}
+              onPress={() => setLanguageModalVisible(true)}
             />
             <MenuItem
               icon="lock-closed-outline"
-              label="Change Password"
+              label={t('profile.changePassword')}
               onPress={() => setPasswordModalVisible(true)}
             />
           </VStack>
@@ -333,23 +359,23 @@ export default function ProfileScreen() {
         {/* Support & Legal */}
         <Box style={styles.section}>
           <Heading size="sm" color="white" marginBottom="$3">
-            Support & Legal
+            {t('profile.supportLegal')}
           </Heading>
           
           <VStack space="sm">
             <MenuItem
               icon="shield-outline"
-              label="Privacy Policy"
+              label={t('profile.privacyPolicy')}
               onPress={handleContactSupport}
             />
             <MenuItem
               icon="document-text-outline"
-              label="Terms of Service"
+              label={t('profile.termsOfService')}
               onPress={handleContactSupport}
             />
             <MenuItem
               icon="help-circle-outline"
-              label="Contact Support"
+              label={t('profile.contactSupport')}
               onPress={handleContactSupport}
             />
           </VStack>
@@ -369,14 +395,14 @@ export default function ProfileScreen() {
               <Ionicons name="log-out-outline" size={20} color="white" />
             )}
             <Text color="white" fontWeight="$semibold">
-              {isLoggingOut ? 'Logging out...' : 'Logout'}
+              {isLoggingOut ? t('auth.loggingOut') : t('auth.logout')}
             </Text>
           </HStack>
         </TouchableOpacity>
 
         {/* App Version */}
         <Text size="xs" color={colors.textMuted} textAlign="center" marginTop="$2" marginBottom="$4">
-          App Version: {APP_VERSION}
+          {t('profile.appVersion')}: {APP_VERSION}
         </Text>
       </VStack>
 
@@ -396,7 +422,7 @@ export default function ProfileScreen() {
         >
           <Box style={styles.modalContent}>
             <HStack justifyContent="space-between" alignItems="center" marginBottom="$4">
-              <Heading size="lg" color="white">Change Password</Heading>
+              <Heading size="lg" color="white">{t('profile.changePasswordModal.title')}</Heading>
               <TouchableOpacity
                 onPress={() => {
                   setPasswordModalVisible(false);
@@ -411,7 +437,7 @@ export default function ProfileScreen() {
               <FormControl isInvalid={!!passwordErrors.currentPassword}>
                 <FormControlLabel>
                   <FormControlLabelText color={colors.textSecondary}>
-                    Current Password
+                    {t('profile.changePasswordModal.currentPassword')}
                   </FormControlLabelText>
                 </FormControlLabel>
                 <Input
@@ -421,7 +447,7 @@ export default function ProfileScreen() {
                   borderRadius="$lg"
                 >
                   <InputField
-                    placeholder="Enter current password"
+                    placeholder={t('profile.changePasswordModal.enterCurrent')}
                     placeholderTextColor={colors.textMuted}
                     color="white"
                     secureTextEntry
@@ -441,7 +467,7 @@ export default function ProfileScreen() {
               <FormControl isInvalid={!!passwordErrors.newPassword}>
                 <FormControlLabel>
                   <FormControlLabelText color={colors.textSecondary}>
-                    New Password
+                    {t('profile.changePasswordModal.newPassword')}
                   </FormControlLabelText>
                 </FormControlLabel>
                 <Input
@@ -451,7 +477,7 @@ export default function ProfileScreen() {
                   borderRadius="$lg"
                 >
                   <InputField
-                    placeholder="Enter new password (min 8 characters)"
+                    placeholder={t('profile.changePasswordModal.enterNew')}
                     placeholderTextColor={colors.textMuted}
                     color="white"
                     secureTextEntry
@@ -471,7 +497,7 @@ export default function ProfileScreen() {
               <FormControl isInvalid={!!passwordErrors.confirmPassword}>
                 <FormControlLabel>
                   <FormControlLabelText color={colors.textSecondary}>
-                    Confirm New Password
+                    {t('profile.changePasswordModal.confirmPassword')}
                   </FormControlLabelText>
                 </FormControlLabel>
                 <Input
@@ -481,7 +507,7 @@ export default function ProfileScreen() {
                   borderRadius="$lg"
                 >
                   <InputField
-                    placeholder="Confirm new password"
+                    placeholder={t('profile.changePasswordModal.confirmNew')}
                     placeholderTextColor={colors.textMuted}
                     color="white"
                     secureTextEntry
@@ -508,7 +534,7 @@ export default function ProfileScreen() {
                     resetPasswordForm();
                   }}
                 >
-                  <ButtonText color={colors.textSecondary}>Cancel</ButtonText>
+                  <ButtonText color={colors.textSecondary}>{t('common.cancel')}</ButtonText>
                 </Button>
                 <Button
                   flex={1}
@@ -519,13 +545,66 @@ export default function ProfileScreen() {
                   {changePasswordMutation.isPending ? (
                     <Spinner size="small" color="white" />
                   ) : (
-                    <ButtonText color="white">Change Password</ButtonText>
+                    <ButtonText color="white">{t('profile.changePasswordModal.button')}</ButtonText>
                   )}
                 </Button>
               </HStack>
             </VStack>
           </Box>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Language Selection Modal */}
+      <Modal
+        visible={languageModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalContainer}
+          activeOpacity={1}
+          onPress={() => setLanguageModalVisible(false)}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <Box style={styles.languageModalContent}>
+              <HStack justifyContent="space-between" alignItems="center" marginBottom="$4">
+                <Heading size="lg" color="white">{t('profile.languageModal.title')}</Heading>
+                <TouchableOpacity onPress={() => setLanguageModalVisible(false)}>
+                  <Ionicons name="close" size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </HStack>
+
+              <VStack space="sm">
+                {LANGUAGES.map((lang) => (
+                  <TouchableOpacity
+                    key={lang.code}
+                    onPress={() => handleLanguageChange(lang.code)}
+                    activeOpacity={0.7}
+                    style={[
+                      styles.languageOption,
+                      language === lang.code && styles.languageOptionSelected,
+                    ]}
+                  >
+                    <HStack justifyContent="space-between" alignItems="center">
+                      <VStack>
+                        <Text color="white" fontWeight={language === lang.code ? '$semibold' : '$normal'}>
+                          {lang.nativeName}
+                        </Text>
+                        <Text color={colors.textSecondary} size="sm">
+                          {lang.name}
+                        </Text>
+                      </VStack>
+                      {language === lang.code && (
+                        <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                      )}
+                    </HStack>
+                  </TouchableOpacity>
+                ))}
+              </VStack>
+            </Box>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </ScrollView>
   );
@@ -567,6 +646,46 @@ function MenuItem({ icon, label, isDisabled, onPress }: MenuItemProps) {
           size={18}
           color={isDisabled ? colors.textMuted : colors.textSecondary}
         />
+      </HStack>
+    </TouchableOpacity>
+  );
+}
+
+interface LanguageMenuItemProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  currentLanguage: string;
+  onPress: () => void;
+}
+
+function LanguageMenuItem({ icon, label, currentLanguage, onPress }: LanguageMenuItemProps) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={styles.menuItem}
+    >
+      <HStack justifyContent="space-between" alignItems="center">
+        <HStack alignItems="center" space="md">
+          <Ionicons
+            name={icon}
+            size={20}
+            color={colors.textSecondary}
+          />
+          <Text color="white">
+            {label}
+          </Text>
+        </HStack>
+        <HStack alignItems="center" space="sm">
+          <Text color={colors.textSecondary} size="sm">
+            {currentLanguage}
+          </Text>
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={colors.textSecondary}
+          />
+        </HStack>
       </HStack>
     </TouchableOpacity>
   );
@@ -616,5 +735,25 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl + 20, // Extra padding for home indicator
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  languageModalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl + 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  languageOption: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surfaceHighlight,
+  },
+  languageOptionSelected: {
+    backgroundColor: `${colors.primary}20`,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
 });

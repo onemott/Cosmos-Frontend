@@ -23,6 +23,7 @@ import { ProductCard } from '../../components/lab/ProductCard';
 import { CartSheet } from '../../components/lab/CartSheet';
 import { useCart } from '../../contexts/CartContext';
 import { useClientProducts } from '../../api/hooks';
+import { useTranslation, useLocalizedField } from '../../lib/i18n';
 import type { ProductModule, Product } from '../../types/api';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { LabStackParamList } from '../../navigation/types';
@@ -32,6 +33,8 @@ export default function AllocationLabScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [isCartVisible, setIsCartVisible] = useState(false);
+  const { t } = useTranslation();
+  const localizedField = useLocalizedField();
 
   const { itemCount, isInCart, toggleCartItem } = useCart();
 
@@ -100,7 +103,7 @@ export default function AllocationLabScreen() {
           <Ionicons name="search" size={20} color={colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search products..."
+            placeholder={t('lab.searchProducts')}
             placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -126,10 +129,10 @@ export default function AllocationLabScreen() {
             </Box>
             <VStack flex={1}>
               <Text fontWeight="$semibold" color="white">
-                Allocation Lab
+                {t('lab.title')}
               </Text>
               <Text size="sm" color="white" opacity={0.8}>
-                Select products and submit to your advisor for review
+                {t('lab.subtitle')}
               </Text>
             </VStack>
           </HStack>
@@ -147,7 +150,7 @@ export default function AllocationLabScreen() {
           <Box alignItems="center" paddingVertical="$8">
             <ActivityIndicator size="large" color={colors.primary} />
             <Text color={colors.textSecondary} marginTop="$4">
-              Loading products...
+              {t('common.loading')}
             </Text>
           </Box>
         )}
@@ -157,14 +160,14 @@ export default function AllocationLabScreen() {
           <Box alignItems="center" paddingVertical="$8">
             <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
             <Text color={colors.textSecondary} marginTop="$2" textAlign="center">
-              Failed to load products
+              {t('common.errorLoading')}
             </Text>
             <TouchableOpacity
               onPress={() => refetch()}
               style={styles.retryButton}
             >
               <Text color={colors.primary} fontWeight="$semibold">
-                Tap to retry
+                {t('common.retry')}
               </Text>
             </TouchableOpacity>
           </Box>
@@ -188,7 +191,7 @@ export default function AllocationLabScreen() {
           <Box alignItems="center" paddingVertical="$8">
             <Ionicons name="search-outline" size={48} color={colors.textMuted} />
             <Text color={colors.textSecondary} marginTop="$2">
-              No products match your search
+              {t('lab.noSearchResults')}
             </Text>
           </Box>
         )}
@@ -198,7 +201,7 @@ export default function AllocationLabScreen() {
           <Box alignItems="center" paddingVertical="$8">
             <Ionicons name="cube-outline" size={48} color={colors.textMuted} />
             <Text color={colors.textSecondary} marginTop="$2">
-              No products available
+              {t('lab.noProducts')}
             </Text>
           </Box>
         )}
@@ -216,7 +219,7 @@ export default function AllocationLabScreen() {
         <HStack space="sm" alignItems="center">
           <Ionicons name="cart" size={22} color="white" />
           <Text color="white" fontWeight="$semibold">
-            Cart
+            {t('cart.cart')}
           </Text>
           {itemCount > 0 && (
             <Box style={styles.cartBadge}>
@@ -256,6 +259,8 @@ function ModuleSection({
   onProductPress,
 }: ModuleSectionProps) {
   const enabledCount = module.products.length;
+  const { t } = useTranslation();
+  const localizedField = useLocalizedField();
 
   return (
     <Box marginBottom="$4">
@@ -286,16 +291,16 @@ function ModuleSection({
             <VStack flex={1}>
               <HStack alignItems="center" space="sm">
                 <Text fontWeight="$semibold" color="white">
-                  {module.name}
+                  {localizedField(module as unknown as Record<string, unknown>, 'name')}
                 </Text>
                 {!module.isEnabled && (
                   <Text size="xs" color={colors.textMuted}>
-                    (Locked)
+                    ({t('lab.locked')})
                   </Text>
                 )}
               </HStack>
               <Text size="sm" color={colors.textSecondary}>
-                {enabledCount} product{enabledCount !== 1 ? 's' : ''}
+                {t('lab.productCount', { count: enabledCount })}
               </Text>
             </VStack>
           </HStack>

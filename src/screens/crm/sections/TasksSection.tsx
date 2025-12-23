@@ -25,25 +25,28 @@ import { colors, spacing, borderRadius } from '../../../config/theme';
 import { TaskCard } from '../../../components/crm/TaskCard';
 import { useTasks, useTaskDetail, useApproveTask, useDeclineTask, useArchiveTask } from '../../../api/hooks';
 import { formatDate } from '../../../utils/format';
+import { useTranslation, useLocalizedDate } from '../../../lib/i18n';
 import type { Task } from '../../../types/api';
 
 type FilterType = 'all' | 'in_progress' | 'action' | 'completed' | 'archived';
-
-// User-friendly workflow state labels
-const WORKFLOW_STATE_LABELS: Record<string, string> = {
-  pending_eam: 'Under Review',
-  pending_client: 'Awaiting Your Response',
-  approved: 'Approved',
-  declined: 'Declined',
-  draft: 'Draft',
-  expired: 'Expired',
-};
 
 export default function TasksSection() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [isDetailVisible, setIsDetailVisible] = useState(false);
   const [actionComment, setActionComment] = useState('');
+  const { t } = useTranslation();
+  const { formatFullDateTime } = useLocalizedDate();
+
+  // User-friendly workflow state labels
+  const WORKFLOW_STATE_LABELS: Record<string, string> = {
+    pending_eam: t('crm.tasks.states.underReview'),
+    pending_client: t('crm.tasks.states.awaitingResponse'),
+    approved: t('crm.tasks.states.approved'),
+    declined: t('crm.tasks.states.declined'),
+    draft: t('crm.tasks.states.draft'),
+    expired: t('crm.tasks.states.expired'),
+  };
 
   // Fetch non-archived tasks by default
   const isArchivedView = filter === 'archived';
@@ -112,11 +115,11 @@ export default function TasksSection() {
         taskId: selectedTaskId,
         comment: actionComment,
       });
-      Alert.alert('Success', 'Task approved successfully');
+      Alert.alert(t('common.success'), t('crm.tasks.approveSuccess'));
       handleCloseDetail();
       refetch();
     } catch (error) {
-      Alert.alert('Error', 'Failed to approve task');
+      Alert.alert(t('common.error'), t('crm.tasks.approveFailed'));
     }
   };
 
@@ -124,7 +127,7 @@ export default function TasksSection() {
     if (!selectedTaskId) return;
     
     if (!actionComment.trim()) {
-      Alert.alert('Required', 'Please provide a reason for declining');
+      Alert.alert(t('common.required'), t('crm.tasks.declineReasonRequired'));
       return;
     }
     
@@ -133,11 +136,11 @@ export default function TasksSection() {
         taskId: selectedTaskId,
         comment: actionComment,
       });
-      Alert.alert('Success', 'Task declined');
+      Alert.alert(t('common.success'), t('crm.tasks.declineSuccess'));
       handleCloseDetail();
       refetch();
     } catch (error) {
-      Alert.alert('Error', 'Failed to decline task');
+      Alert.alert(t('common.error'), t('crm.tasks.declineFailed'));
     }
   };
 
@@ -145,19 +148,19 @@ export default function TasksSection() {
     if (!selectedTaskId) return;
 
     Alert.alert(
-      'Archive Task',
-      'Are you sure you want to archive this task? It will be moved to the Archived tab.',
+      t('crm.tasks.archiveTask'),
+      t('crm.tasks.archiveConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Archive',
+          text: t('crm.tasks.archive'),
           onPress: async () => {
             try {
               await archiveMutation.mutateAsync(selectedTaskId);
               handleCloseDetail();
               refetch(); // Refresh list to remove archived task
             } catch (error) {
-              Alert.alert('Error', 'Failed to archive task');
+              Alert.alert(t('common.error'), t('crm.tasks.archiveFailed'));
             }
           },
         },
@@ -176,11 +179,11 @@ export default function TasksSection() {
   const actionCount = allTasks.filter((t: any) => t.requires_action).length;
 
   const FILTER_LABELS: Record<FilterType, string> = {
-    all: 'All',
-    in_progress: 'In Progress',
-    action: `Action (${actionCount})`,
-    completed: 'Completed',
-    archived: 'Archived',
+    all: t('common.all'),
+    in_progress: t('crm.tasks.filters.inProgress'),
+    action: t('crm.tasks.filters.action', { count: actionCount }),
+    completed: t('crm.tasks.filters.completed'),
+    archived: t('crm.tasks.filters.archived'),
   };
 
   return (
@@ -221,7 +224,7 @@ export default function TasksSection() {
                 <HStack alignItems="center" space="sm" flex={1}>
                   <Ionicons name="alert-circle" size={20} color={colors.error} />
                   <Text size="sm" color={colors.error} fontWeight="$medium">
-                    {actionCount} task{actionCount > 1 ? 's' : ''} require{actionCount === 1 ? 's' : ''} your response
+                    {t('crm.tasks.actionRequired', { count: actionCount })}
                   </Text>
                 </HStack>
                 <Ionicons name="chevron-forward" size={16} color={colors.error} />
@@ -247,7 +250,7 @@ export default function TasksSection() {
           <Box alignItems="center" paddingVertical="$8">
             <Ionicons name="checkbox-outline" size={48} color={colors.textMuted} />
             <Text color={colors.textSecondary} marginTop="$2">
-              No tasks found
+              {t('crm.tasks.noTasks')}
             </Text>
           </Box>
         ) : (

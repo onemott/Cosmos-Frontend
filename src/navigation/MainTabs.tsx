@@ -8,10 +8,13 @@ import CRMStack from './CRMStack';
 import ProfileStack from './ProfileStack';
 import type { MainTabParamList } from './types';
 import { colors } from '../config/theme';
+import { useTranslation } from '../lib/i18n';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function MainTabs() {
+  const { t } = useTranslation();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -43,11 +46,11 @@ export default function MainTabs() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeStack} />
-      <Tab.Screen name="Accounts" component={AccountsStack} />
-      <Tab.Screen name="Lab" component={LabStack} />
-      <Tab.Screen name="CRM" component={CRMStack} options={{ title: 'Hub' }} />
-      <Tab.Screen name="Profile" component={ProfileStack} />
+      <Tab.Screen name="Home" component={HomeStack} options={{ title: t('navigation.home') }} />
+      <Tab.Screen name="Accounts" component={AccountsStack} options={{ title: t('navigation.accounts') }} />
+      <Tab.Screen name="Lab" component={LabStack} options={{ title: t('navigation.lab') }} />
+      <Tab.Screen name="CRM" component={CRMStack} options={{ title: t('navigation.crm') }} />
+      <Tab.Screen name="Profile" component={ProfileStack} options={{ title: t('navigation.profile') }} />
     </Tab.Navigator>
   );
 }

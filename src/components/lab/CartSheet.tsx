@@ -25,6 +25,7 @@ import { colors, spacing, borderRadius } from '../../config/theme';
 import { formatCurrency } from '../../utils/format';
 import { useCart } from '../../contexts/CartContext';
 import { useSubmitProductRequest } from '../../api/hooks';
+import { useTranslation, useLocalizedField } from '../../lib/i18n';
 import type { ProductRequestItem } from '../../types/api';
 
 interface CartSheetProps {
@@ -36,13 +37,15 @@ interface CartSheetProps {
 export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
   const { items, removeFromCart, clearCart, getCartSummary } = useCart();
   const [clientNotes, setClientNotes] = useState('');
+  const { t } = useTranslation();
+  const localizedField = useLocalizedField();
   
   const submitMutation = useSubmitProductRequest();
   const { totalMinInvestment } = getCartSummary();
 
   const handleSubmit = async () => {
     if (items.length === 0) {
-      Alert.alert('Empty Cart', 'Please add at least one product to your cart.');
+      Alert.alert(t('cart.emptyTitle'), t('cart.emptyMessage'));
       return;
     }
 
@@ -67,14 +70,14 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
       setClientNotes('');
       
       Alert.alert(
-        'Request Submitted',
+        t('cart.requestSubmitted'),
         result.message,
-        [{ text: 'OK', onPress: onClose }]
+        [{ text: t('common.ok'), onPress: onClose }]
       );
     } catch (error: any) {
       console.error('Submit error:', error);
-      const message = error.response?.data?.detail || 'Failed to submit request. Please try again.';
-      Alert.alert('Error', message);
+      const message = error.response?.data?.detail || t('cart.submitFailed');
+      Alert.alert(t('common.error'), message);
     }
   };
 
@@ -97,7 +100,7 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
 
           {/* Header */}
           <HStack justifyContent="space-between" alignItems="center" paddingHorizontal="$4" paddingBottom="$3">
-            <Heading size="lg" color="white">Your Selection</Heading>
+            <Heading size="lg" color="white">{t('cart.title')}</Heading>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -111,7 +114,7 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
               <Box alignItems="center" paddingVertical="$8">
                 <Ionicons name="cart-outline" size={48} color={colors.textMuted} />
                 <Text color={colors.textSecondary} marginTop="$2">
-                  Your cart is empty
+                  {t('cart.empty')}
                 </Text>
               </Box>
             ) : (
@@ -127,10 +130,10 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
                   >
                     <VStack flex={1}>
                       <Text fontWeight="$semibold" color="white">
-                        {item.product.name}
+                        {localizedField(item.product, 'name')}
                       </Text>
                       <Text size="sm" color={colors.textSecondary}>
-                        Min: {formatCurrency(item.product.minInvestment, item.product.currency)}
+                        {t('cart.minInvestment')}: {formatCurrency(item.product.minInvestment, item.product.currency)}
                       </Text>
                     </VStack>
                     <TouchableOpacity
@@ -151,7 +154,7 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
               <Divider bg={colors.border} />
               <Box padding="$4">
                 <HStack justifyContent="space-between" marginBottom="$3">
-                  <Text color={colors.textSecondary}>Total Min. Investment</Text>
+                  <Text color={colors.textSecondary}>{t('cart.totalMinInvestment')}</Text>
                   <Text fontWeight="$bold" color={colors.primary} size="lg">
                     {formatCurrency(totalMinInvestment, 'USD')}
                   </Text>
@@ -159,11 +162,11 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
 
                 {/* Notes Input */}
                 <Text size="sm" color={colors.textSecondary} marginBottom="$2">
-                  Add notes for your advisor (optional)
+                  {t('cart.notesLabel')}
                 </Text>
                 <TextInput
                   style={styles.notesInput}
-                  placeholder="E.g., I'm interested in long-term growth..."
+                  placeholder={t('cart.notesPlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   value={clientNotes}
                   onChangeText={setClientNotes}
@@ -185,7 +188,7 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
                 onPress={onClose}
                 disabled={submitMutation.isPending}
               >
-                <ButtonText color={colors.textSecondary}>Cancel</ButtonText>
+                <ButtonText color={colors.textSecondary}>{t('common.cancel')}</ButtonText>
               </Button>
               <Button
                 flex={2}
@@ -195,7 +198,7 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
                 opacity={items.length === 0 || submitMutation.isPending ? 0.5 : 1}
               >
                 <ButtonText color="white">
-                  {submitMutation.isPending ? 'Submitting...' : 'Submit to EAM'}
+                  {submitMutation.isPending ? t('cart.submitting') : t('cart.submitToAdvisor')}
                 </ButtonText>
               </Button>
             </HStack>
