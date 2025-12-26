@@ -4,6 +4,7 @@ import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { config } from '@gluestack-ui/config';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { BrandingProvider } from './src/contexts/BrandingContext';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { CartProvider } from './src/contexts/CartContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
@@ -25,11 +26,13 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <GluestackUIProvider config={config}>
           <LanguageProvider>
-            <AuthProvider>
-              <CartProvider>
-                <RootNavigator />
-              </CartProvider>
-            </AuthProvider>
+            <BrandingProvider>
+              <AuthProvider>
+                <CartProvider>
+                  <RootNavigator />
+                </CartProvider>
+              </AuthProvider>
+            </BrandingProvider>
           </LanguageProvider>
         </GluestackUIProvider>
       </QueryClientProvider>

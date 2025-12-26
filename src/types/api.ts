@@ -14,11 +14,24 @@ export interface ChangePasswordResponse {
   success: boolean;
 }
 
+// Tenant Branding
+export interface TenantBranding {
+  app_name?: string;
+  primary_color?: string;
+  logo_url?: string;
+  has_logo: boolean;
+}
+
 export interface LoginResponse {
   access_token: string;
   refresh_token: string;
   token_type: string;
   user_type: string;
+  client_id: string;
+  client_name: string;
+  tenant_id: string;
+  tenant_name?: string;
+  tenant_branding?: TenantBranding;
 }
 
 // Invitation / Registration
@@ -62,6 +75,9 @@ export interface ClientProfile {
   // Extended from backend joins (if available)
   tenant_name?: string;
   risk_profile?: string;
+  language?: string;
+  // Tenant branding
+  tenant_branding?: TenantBranding;
 }
 
 // Portfolio

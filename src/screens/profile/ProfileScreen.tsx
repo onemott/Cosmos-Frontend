@@ -32,6 +32,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../config/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage, LANGUAGES, Language } from '../../contexts/LanguageContext';
+import { usePrimaryColor, useAppName } from '../../contexts/BrandingContext';
 import { useChangePassword, useUpdateLanguage } from '../../api/hooks';
 import { useTranslation, useLocalizedDate } from '../../lib/i18n';
 
@@ -50,6 +51,8 @@ export default function ProfileScreen() {
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const { formatMonthYear, formatDateTime } = useLocalizedDate();
+  const primaryColor = usePrimaryColor();
+  const appName = useAppName();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   // Change password state
@@ -219,9 +222,9 @@ export default function ProfileScreen() {
       <VStack space="lg">
         {/* Profile Header */}
         <Box alignItems="center" marginTop="$4">
-          {/* Avatar */}
+          {/* Avatar - uses tenant primary color */}
           <Box
-            bg={colors.primary}
+            bg={primaryColor}
             width={100}
             height={100}
             borderRadius={50}
@@ -400,9 +403,9 @@ export default function ProfileScreen() {
           </HStack>
         </TouchableOpacity>
 
-        {/* App Version */}
+        {/* App Version - shows tenant app name */}
         <Text size="xs" color={colors.textMuted} textAlign="center" marginTop="$2" marginBottom="$4">
-          {t('profile.appVersion')}: {APP_VERSION}
+          {appName} • {t('profile.appVersion')}: {APP_VERSION}
         </Text>
       </VStack>
 

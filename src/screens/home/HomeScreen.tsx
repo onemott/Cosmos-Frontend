@@ -15,6 +15,9 @@ import { formatCurrency, formatPercentage } from '../../utils/format';
 import { colors, spacing } from '../../config/theme';
 import { GradientCard } from '../../components/ui/GradientCard';
 import { useTranslation, useLocalizedDate } from '../../lib/i18n';
+import { useAuth } from '../../contexts/AuthContext';
+import { useAppName } from '../../contexts/BrandingContext';
+import TenantLogo from '../../components/TenantLogo';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -23,6 +26,8 @@ export default function HomeScreen() {
   const { data: allocation, isLoading: isLoadingAllocation } = usePortfolioAllocation();
   const { t } = useTranslation();
   const { formatFullDateTime } = useLocalizedDate();
+  const { user } = useAuth();
+  const appName = useAppName();
 
   const handleRefresh = async () => {
     await refetch();
@@ -53,6 +58,19 @@ export default function HomeScreen() {
       }
     >
       <VStack space="lg">
+        {/* Welcome Header with Tenant Logo */}
+        <HStack alignItems="center" space="md" paddingBottom="$2">
+          <TenantLogo size={48} />
+          <VStack flex={1}>
+            <Text size="sm" color={colors.textSecondary}>
+              {t('home.welcomeBack')}
+            </Text>
+            <Heading size="lg" color="white" numberOfLines={1}>
+              {user?.client_name || appName}
+            </Heading>
+          </VStack>
+        </HStack>
+
         {/* Net Worth Card */}
         <GradientCard variant="primary">
           <VStack space="sm">

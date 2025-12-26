@@ -4,7 +4,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  TouchableWithoutFeedback,
   TouchableOpacity,
   Keyboard,
   ScrollView,
@@ -92,9 +91,12 @@ export default function RegisterScreen() {
     }
   }, [invitationCode, refetch]);
   
-  // Pre-fill form when invitation is valid
+  // Track if form has been pre-filled to avoid overwriting user input
+  const [hasPrefilledForm, setHasPrefilledForm] = useState(false);
+
+  // Pre-fill form when invitation is valid (only once)
   useEffect(() => {
-    if (invitationData?.valid) {
+    if (invitationData?.valid && !hasPrefilledForm) {
       if (invitationData.email) setEmail(invitationData.email);
       if (invitationData.invitee_name) {
         const nameParts = invitationData.invitee_name.split(' ');
@@ -105,8 +107,9 @@ export default function RegisterScreen() {
           setFirstName(invitationData.invitee_name);
         }
       }
+      setHasPrefilledForm(true);
     }
-  }, [invitationData]);
+  }, [invitationData, hasPrefilledForm]);
   
   const handleValidateCode = () => {
     if (invitationCode.replace(/-/g, '').length !== 9) {
@@ -366,7 +369,7 @@ export default function RegisterScreen() {
             </FormControlError>
           )}
         </FormControl>
-        
+
         <FormControl flex={1} isInvalid={!!formErrors.lastName}>
           <FormControlLabel>
             <FormControlLabelText color={colors.textSecondary}>{t('register.lastName')}</FormControlLabelText>
@@ -388,7 +391,10 @@ export default function RegisterScreen() {
           )}
         </FormControl>
       </HStack>
-      
+
+      {/* Spacer to fix HStack touch overlay bug */}
+      <Box height={1} />
+
       {/* Email */}
       <FormControl isInvalid={!!formErrors.email}>
         <FormControlLabel>
@@ -403,7 +409,6 @@ export default function RegisterScreen() {
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
-            autoComplete="email"
           />
         </Input>
         {formErrors.email && (
@@ -412,7 +417,7 @@ export default function RegisterScreen() {
           </FormControlError>
         )}
       </FormControl>
-      
+
       {/* Phone (optional) */}
       <FormControl>
         <FormControlLabel>
@@ -428,7 +433,6 @@ export default function RegisterScreen() {
             value={phone}
             onChangeText={setPhone}
             keyboardType="phone-pad"
-            autoComplete="tel"
           />
         </Input>
       </FormControl>
@@ -519,25 +523,25 @@ export default function RegisterScreen() {
   );
   
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <LinearGradient
+        colors={[colors.background, '#111827']}
+        style={styles.gradient}
       >
-        <LinearGradient
-          colors={[colors.background, '#111827']}
-          style={styles.gradient}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          onScrollBeginDrag={Keyboard.dismiss}
         >
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <Box style={styles.content}>
-              {step === 'code' ? renderCodeStep() : renderFormStep()}
-            </Box>
-          </ScrollView>
-        </LinearGradient>
+          <Box style={styles.content}>
+            {step === 'code' ? renderCodeStep() : renderFormStep()}
+          </Box>
+        </ScrollView>
+      </LinearGradient>
         
         {/* Language Selector Modal */}
         <Modal
@@ -584,8 +588,7 @@ export default function RegisterScreen() {
             </Box>
           </Box>
         </Modal>
-      </KeyboardAvoidingView>
-    </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 

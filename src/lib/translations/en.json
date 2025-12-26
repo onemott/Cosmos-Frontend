@@ -96,6 +96,7 @@
     "somethingWentWrong": "Something went wrong. Please try again."
   },
   "home": {
+    "welcomeBack": "Welcome back,",
     "totalNetWorth": "Total Net Worth",
     "invested": "Invested",
     "cash": "Cash",

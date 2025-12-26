@@ -54,7 +54,7 @@
     "validEmail": "请输入有效的邮箱地址",
     "passwordRequired": "请输入密码",
     "passwordMinLength": "密码至少需要6个字符",
-    "cosmosWealth": "Cosmos 财富",
+    "cosmosWealth": "Cosmos",
     "tagline": "您的现代财富管理平台"
   },
   "register": {
@@ -96,6 +96,7 @@
     "somethingWentWrong": "出现错误，请重试。"
   },
   "home": {
+    "welcomeBack": "欢迎回来，",
     "totalNetWorth": "总资产净值",
     "invested": "投资",
     "cash": "现金",

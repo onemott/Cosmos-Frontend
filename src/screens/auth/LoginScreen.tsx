@@ -33,6 +33,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { colors, spacing, borderRadius } from '../../config/theme';
 import { useTranslation } from '../../lib/i18n';
 import { useLanguage, LANGUAGES, Language } from '../../contexts/LanguageContext';
+import { useAppName } from '../../contexts/BrandingContext';
+import TenantLogo from '../../components/TenantLogo';
 import type { AuthStackScreenProps } from '../../navigation/types';
 
 type LoginScreenProps = AuthStackScreenProps<'Login'>;
@@ -47,6 +49,7 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const { t } = useTranslation();
   const { language, setLanguage } = useLanguage();
+  const appName = useAppName();
   
   const handleLanguageChange = async (newLanguage: Language) => {
     await setLanguage(newLanguage);
@@ -171,18 +174,11 @@ export default function LoginScreen() {
                 }}
               >
                 <VStack space="sm" marginBottom="$8">
-                  <LinearGradient
-                    colors={colors.gradients.primary as [string, string]}
-                    style={styles.logoContainer}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                  >
-                    <Text color="white" fontSize="$4xl" fontWeight="$bold">
-                      C
-                    </Text>
-                  </LinearGradient>
+                  <Box style={styles.logoContainer}>
+                    <TenantLogo size={64} showLetterFallback />
+                  </Box>
                   <Heading size="3xl" color="white" textAlign="left">
-                    {t('auth.cosmosWealth')}
+                    {appName}
                   </Heading>
                   <Text size="md" color={colors.textSecondary} textAlign="left">
                     {t('auth.tagline')}

@@ -8,12 +8,14 @@ import CRMStack from './CRMStack';
 import ProfileStack from './ProfileStack';
 import type { MainTabParamList } from './types';
 import { colors } from '../config/theme';
+import { usePrimaryColor } from '../contexts/BrandingContext';
 import { useTranslation } from '../lib/i18n';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function MainTabs() {
   const { t } = useTranslation();
+  const primaryColor = usePrimaryColor();
   
   return (
     <Tab.Navigator
@@ -38,7 +40,7 @@ export default function MainTabs() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: primaryColor,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
           backgroundColor: colors.tabBarBackground,

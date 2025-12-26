@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { tokenStorage, setAuthFailedCallback, clearAuthFailedCallback } from '../api/client';
 import { useLogin, useLogout, useClientProfile } from '../api/hooks';
+import { useBranding } from './BrandingContext';
 import type { ClientProfile } from '../types/api';
 
 interface AuthContextType {
@@ -17,6 +18,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const isValidatingRef = useRef(false);
+  
+  const { setBranding } = useBranding();
 
   const loginMutation = useLogin();
   const logoutMutation = useLogout();
@@ -88,11 +91,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [isAuthenticated, isInitializing, refetch]);
 
+  // Update branding when user profile is loaded/updated
+  useEffect(() => {
+    if (user?.tenant_branding) {
+      setBranding(user.tenant_branding);
+    }
+  }, [user?.tenant_branding, setBranding]);
+
   const login = useCallback(async (email: string, password: string) => {
     const response = await loginMutation.mutateAsync({ email, password });
     await tokenStorage.setTokens(response.access_token, response.refresh_token);
+    
+    // Set tenant branding from login response
+    if (response.tenant_branding) {
+      setBranding(response.tenant_branding);
+    }
+    
     setIsAuthenticated(true);
-  }, [loginMutation]);
+  }, [loginMutation, setBranding]);
 
   const logout = useCallback(async () => {
     try {
@@ -102,6 +118,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('[AuthContext] Logout request failed, clearing local state');
     }
     await tokenStorage.clearTokens();
+    // Note: We intentionally do NOT clear branding on logout
+    // This allows the login screen to show the tenant's branding
+    // for returning users (branding persists until a different tenant logs in)
     setIsAuthenticated(false);
   }, [logoutMutation]);
 
