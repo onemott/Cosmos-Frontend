@@ -24,7 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../../config/theme';
 import { TaskCard } from '../../../components/crm/TaskCard';
 import { useTasks, useTaskDetail, useApproveTask, useDeclineTask, useArchiveTask } from '../../../api/hooks';
-import { formatDate } from '../../../utils/format';
+import { formatDate, formatCurrency } from '../../../utils/format';
 import { useTranslation, useLocalizedDate } from '../../../lib/i18n';
 import type { Task } from '../../../types/api';
 
@@ -351,13 +351,18 @@ export default function TasksSection() {
                       <HStack alignItems="center" space="sm" marginBottom="$2">
                         <Ionicons name="chatbubble-ellipses" size={16} color={colors.primary} />
                         <Text size="sm" color={colors.primary} fontWeight="$semibold">
-                          Message from your advisor
+                          {t('crm.tasks.messageFromAdvisor')}
                         </Text>
                       </HStack>
                       <Text size="sm" color="white">
                         {(selectedTask as any).proposal_data.eam_message}
                       </Text>
                     </Box>
+                  )}
+
+                  {/* Product Request Order Details */}
+                  {selectedTask.task_type === 'product_request' && (selectedTask as any).proposal_data && (
+                    <ProductRequestDetails proposalData={(selectedTask as any).proposal_data} />
                   )}
 
                   {/* Action Area */}
@@ -424,6 +429,143 @@ export default function TasksSection() {
           </Box>
         </Box>
       </Modal>
+    </Box>
+  );
+}
+
+// Helper component for product request order display
+interface ProductRequestOrder {
+  product_id: string;
+  product_name: string;
+  module_code: string;
+  min_investment: number;
+  requested_amount: number;
+  currency: string;
+}
+
+interface ProductRequestDetailsProps {
+  proposalData: {
+    orders?: ProductRequestOrder[];
+    products?: ProductRequestOrder[];
+    total_min_investment?: number;
+    total_requested_amount?: number;
+    client_notes?: string;
+  };
+}
+
+function ProductRequestDetails({ proposalData }: ProductRequestDetailsProps) {
+  const { t } = useTranslation();
+  
+  // Use orders array if available (new format), fallback to products (legacy)
+  const orders = proposalData.orders || proposalData.products || [];
+  const totalMin = proposalData.total_min_investment;
+  const totalRequested = proposalData.total_requested_amount;
+  const clientNotes = proposalData.client_notes;
+  
+  if (orders.length === 0) {
+    return null;
+  }
+
+  return (
+    <Box
+      bg={colors.surface}
+      borderRadius={borderRadius.md}
+      padding="$3"
+      marginTop="$2"
+    >
+      <HStack alignItems="center" space="sm" marginBottom="$3">
+        <Ionicons name="cart" size={16} color={colors.primary} />
+        <Text size="sm" color={colors.primary} fontWeight="$semibold">
+          {t('cart.title')}
+        </Text>
+      </HStack>
+      
+      {/* Product list */}
+      <VStack space="sm">
+        {orders.map((order, index) => {
+          const requestedAmount = order.requested_amount ?? order.min_investment;
+          const isAboveMin = requestedAmount > order.min_investment;
+          
+          return (
+            <Box
+              key={order.product_id || index}
+              bg={colors.background}
+              borderRadius={borderRadius.sm}
+              padding="$2"
+            >
+              <HStack justifyContent="space-between" alignItems="flex-start">
+                <VStack flex={1}>
+                  <Text size="sm" fontWeight="$medium" color="white">
+                    {order.product_name}
+                  </Text>
+                  <Text size="xs" color={colors.textMuted}>
+                    {t('cart.minInvestment')}: {formatCurrency(order.min_investment, order.currency)}
+                  </Text>
+                </VStack>
+                <VStack alignItems="flex-end">
+                  <Text 
+                    size="sm" 
+                    fontWeight="$semibold" 
+                    color={isAboveMin ? colors.primary : 'white'}
+                  >
+                    {formatCurrency(requestedAmount, order.currency)}
+                  </Text>
+                </VStack>
+              </HStack>
+            </Box>
+          );
+        })}
+      </VStack>
+      
+      {/* Totals */}
+      <Divider bg={colors.border} marginVertical="$2" />
+      
+      {totalMin !== undefined && (
+        <HStack justifyContent="space-between" marginBottom="$1">
+          <Text size="xs" color={colors.textMuted}>
+            {t('cart.totalMinInvestment')}
+          </Text>
+          <Text size="xs" color={colors.textMuted}>
+            {formatCurrency(totalMin, 'USD')}
+          </Text>
+        </HStack>
+      )}
+      
+      {totalRequested !== undefined && (
+        <HStack justifyContent="space-between">
+          <Text size="sm" color={colors.textSecondary} fontWeight="$medium">
+            {t('cart.totalRequested')}
+          </Text>
+          <Text size="sm" color={colors.primary} fontWeight="$bold">
+            {formatCurrency(totalRequested, 'USD')}
+          </Text>
+        </HStack>
+      )}
+      
+      {/* Fallback for legacy data */}
+      {totalRequested === undefined && totalMin !== undefined && (
+        <HStack justifyContent="space-between">
+          <Text size="sm" color={colors.textSecondary} fontWeight="$medium">
+            {t('cart.totalMinInvestment')}
+          </Text>
+          <Text size="sm" color={colors.primary} fontWeight="$bold">
+            {formatCurrency(totalMin, 'USD')}
+          </Text>
+        </HStack>
+      )}
+      
+      {/* Client notes */}
+      {clientNotes && (
+        <>
+          <Divider bg={colors.border} marginVertical="$2" />
+          <Text size="xs" color={colors.textMuted} marginBottom="$1">
+            {t('cart.notesLabel').replace(' (optional)', '')}
+          </Text>
+          <Text size="sm" color={colors.textSecondary}>
+            {clientNotes}
+          </Text>
+        </>
+      )}
     </Box>
   );
 }

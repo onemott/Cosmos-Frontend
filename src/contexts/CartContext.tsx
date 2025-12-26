@@ -14,8 +14,9 @@ interface CartContextType {
   removeFromCart: (productId: string) => void;
   toggleCartItem: (product: Product) => void;
   updateItemNotes: (productId: string, notes: string) => void;
+  updateItemAmount: (productId: string, amount: number) => void;
   clearCart: () => void;
-  getCartSummary: () => { products: Product[]; totalMinInvestment: number };
+  getCartSummary: () => { products: Product[]; totalMinInvestment: number; totalRequestedAmount: number };
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -35,7 +36,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (prev.some((item) => item.product.id === product.id)) {
         return prev; // Already in cart
       }
-      return [...prev, { product, addedAt: new Date() }];
+      return [...prev, { product, addedAt: new Date(), requestedAmount: product.minInvestment }];
     });
   }, []);
 
@@ -62,6 +63,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const updateItemAmount = useCallback((productId: string, amount: number) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.product.id === productId ? { ...item, requestedAmount: amount } : item
+      )
+    );
+  }, []);
+
   const clearCart = useCallback(() => {
     setItems([]);
   }, []);
@@ -72,7 +81,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       (sum, p) => sum + p.minInvestment,
       0
     );
-    return { products, totalMinInvestment };
+    const totalRequestedAmount = items.reduce(
+      (sum, item) => sum + item.requestedAmount,
+      0
+    );
+    return { products, totalMinInvestment, totalRequestedAmount };
   }, [items]);
 
   const value = useMemo(
@@ -84,6 +97,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeFromCart,
       toggleCartItem,
       updateItemNotes,
+      updateItemAmount,
       clearCart,
       getCartSummary,
     }),
@@ -95,6 +109,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeFromCart,
       toggleCartItem,
       updateItemNotes,
+      updateItemAmount,
       clearCart,
       getCartSummary,
     ]

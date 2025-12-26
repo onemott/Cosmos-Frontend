@@ -260,6 +260,7 @@ export interface CartItem {
   product: Product;
   addedAt: Date;
   notes?: string;
+  requestedAmount: number;
 }
 
 export interface OrderSubmission {
@@ -273,6 +274,7 @@ export interface ProductRequestItem {
   product_name: string;
   module_code: string;
   min_investment: number;
+  requested_amount: number;
   currency: string;
 }
 

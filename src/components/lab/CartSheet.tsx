@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -35,13 +35,70 @@ interface CartSheetProps {
 }
 
 export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
-  const { items, removeFromCart, clearCart, getCartSummary } = useCart();
+  const { items, removeFromCart, updateItemAmount, clearCart, getCartSummary } = useCart();
   const [clientNotes, setClientNotes] = useState('');
+  const [editingAmounts, setEditingAmounts] = useState<Record<string, string>>({});
   const { t } = useTranslation();
   const localizedField = useLocalizedField();
   
   const submitMutation = useSubmitProductRequest();
-  const { totalMinInvestment } = getCartSummary();
+  const { totalMinInvestment, totalRequestedAmount } = getCartSummary();
+
+  // Clear editing state when modal closes
+  useEffect(() => {
+    if (!visible) {
+      setEditingAmounts({});
+    }
+  }, [visible]);
+
+  // Handle amount text change while editing
+  const handleAmountChange = (productId: string, text: string) => {
+    // Only allow numbers and single decimal point
+    let cleaned = text.replace(/[^0-9.]/g, '');
+    // Ensure only one decimal point
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      cleaned = parts[0] + '.' + parts.slice(1).join('');
+    }
+    setEditingAmounts((prev) => ({ ...prev, [productId]: cleaned }));
+  };
+
+  // Handle amount blur - validate and update
+  const handleAmountBlur = (productId: string, minInvestment: number) => {
+    const text = editingAmounts[productId];
+    if (text === undefined) return;
+
+    let amount = parseFloat(text) || 0;
+    // Auto-adjust to minimum if below
+    if (amount < minInvestment) {
+      amount = minInvestment;
+    }
+    updateItemAmount(productId, amount);
+    // Clear editing state
+    setEditingAmounts((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+  };
+
+  // Get display value for amount input
+  const getAmountDisplay = (productId: string, requestedAmount: number) => {
+    if (editingAmounts[productId] !== undefined) {
+      return editingAmounts[productId];
+    }
+    return requestedAmount.toString();
+  };
+
+  // Check if amount is below minimum (for warning display)
+  const isAmountBelowMin = (productId: string, minInvestment: number, requestedAmount: number) => {
+    const editingValue = editingAmounts[productId];
+    if (editingValue !== undefined) {
+      const parsed = parseFloat(editingValue) || 0;
+      return parsed < minInvestment;
+    }
+    return requestedAmount < minInvestment;
+  };
 
   const handleSubmit = async () => {
     if (items.length === 0) {
@@ -55,6 +112,7 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
       product_name: item.product.name,
       module_code: item.product.moduleCode,
       min_investment: item.product.minInvestment,
+      requested_amount: item.requestedAmount,
       currency: item.product.currency,
     }));
 
@@ -119,31 +177,65 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
               </Box>
             ) : (
               <VStack space="sm" paddingVertical="$3">
-                {items.map((item) => (
-                  <HStack
-                    key={item.product.id}
-                    justifyContent="space-between"
-                    alignItems="center"
-                    bg={colors.surface}
-                    padding="$3"
-                    borderRadius={borderRadius.md}
-                  >
-                    <VStack flex={1}>
-                      <Text fontWeight="$semibold" color="white">
-                        {localizedField(item.product, 'name')}
-                      </Text>
-                      <Text size="sm" color={colors.textSecondary}>
-                        {t('cart.minInvestment')}: {formatCurrency(item.product.minInvestment, item.product.currency)}
-                      </Text>
-                    </VStack>
-                    <TouchableOpacity
-                      onPress={() => removeFromCart(item.product.id)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                {items.map((item) => {
+                  const belowMin = isAmountBelowMin(item.product.id, item.product.minInvestment, item.requestedAmount);
+                  return (
+                    <Box
+                      key={item.product.id}
+                      bg={colors.surface}
+                      padding="$3"
+                      borderRadius={borderRadius.md}
                     >
-                      <Ionicons name="trash-outline" size={20} color={colors.error} />
-                    </TouchableOpacity>
-                  </HStack>
-                ))}
+                      <HStack justifyContent="space-between" alignItems="flex-start">
+                        <VStack flex={1}>
+                          <Text fontWeight="$semibold" color="white">
+                            {localizedField(item.product, 'name')}
+                          </Text>
+                          <Text size="sm" color={colors.textSecondary}>
+                            {t('cart.minInvestment')}: {formatCurrency(item.product.minInvestment, item.product.currency)}
+                          </Text>
+                        </VStack>
+                        <TouchableOpacity
+                          onPress={() => removeFromCart(item.product.id)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Ionicons name="trash-outline" size={20} color={colors.error} />
+                        </TouchableOpacity>
+                      </HStack>
+                      
+                      {/* Requested Amount Input */}
+                      <HStack marginTop="$2" alignItems="center" space="sm">
+                        <Text size="sm" color={colors.textSecondary}>
+                          {t('cart.requestedAmount')}:
+                        </Text>
+                        <HStack alignItems="center" flex={1}>
+                          <Text size="sm" color={colors.textMuted}>{item.product.currency}</Text>
+                          <TextInput
+                            style={[
+                              styles.amountInput,
+                              belowMin && styles.amountInputWarning
+                            ]}
+                            value={getAmountDisplay(item.product.id, item.requestedAmount)}
+                            onChangeText={(text) => handleAmountChange(item.product.id, text)}
+                            onBlur={() => handleAmountBlur(item.product.id, item.product.minInvestment)}
+                            keyboardType="numeric"
+                            selectTextOnFocus
+                          />
+                        </HStack>
+                      </HStack>
+                      
+                      {/* Warning message if below minimum */}
+                      {belowMin && (
+                        <HStack alignItems="center" marginTop="$1" space="xs">
+                          <Ionicons name="warning" size={14} color={colors.warning} />
+                          <Text size="xs" color={colors.warning}>
+                            {t('cart.willAdjustToMinimum')}
+                          </Text>
+                        </HStack>
+                      )}
+                    </Box>
+                  );
+                })}
               </VStack>
             )}
           </ScrollView>
@@ -153,10 +245,16 @@ export function CartSheet({ visible, onClose, onSubmit }: CartSheetProps) {
             <>
               <Divider bg={colors.border} />
               <Box padding="$4">
-                <HStack justifyContent="space-between" marginBottom="$3">
-                  <Text color={colors.textSecondary}>{t('cart.totalMinInvestment')}</Text>
-                  <Text fontWeight="$bold" color={colors.primary} size="lg">
+                <HStack justifyContent="space-between" marginBottom="$2">
+                  <Text size="sm" color={colors.textMuted}>{t('cart.totalMinInvestment')}</Text>
+                  <Text size="sm" color={colors.textMuted}>
                     {formatCurrency(totalMinInvestment, 'USD')}
+                  </Text>
+                </HStack>
+                <HStack justifyContent="space-between" marginBottom="$3">
+                  <Text color={colors.textSecondary} fontWeight="$medium">{t('cart.totalRequested')}</Text>
+                  <Text fontWeight="$bold" color={colors.primary} size="lg">
+                    {formatCurrency(totalRequestedAmount, 'USD')}
                   </Text>
                 </HStack>
 
@@ -236,7 +334,7 @@ const styles = StyleSheet.create({
   },
   itemsContainer: {
     paddingHorizontal: spacing.md,
-    maxHeight: 250,
+    maxHeight: 300,
   },
   notesInput: {
     backgroundColor: colors.surface,
@@ -247,5 +345,20 @@ const styles = StyleSheet.create({
     minHeight: 80,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  amountInput: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    marginLeft: spacing.xs,
+    color: 'white',
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  amountInputWarning: {
+    borderColor: colors.warning,
   },
 });
