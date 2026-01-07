@@ -19,7 +19,8 @@
     "noData": "暂无数据",
     "comingSoon": "即将推出",
     "lastUpdated": "最后更新",
-    "processing": "处理中..."
+    "processing": "处理中...",
+    "viewAll": "查看全部"
   },
   "navigation": {
     "home": "首页",
@@ -109,7 +110,11 @@
     "noPortfolioData": "暂无投资组合数据",
     "noAllocationData": "暂无配置数据",
     "noCurrencyData": "暂无货币数据",
-    "noHoldingsData": "暂无持仓数据"
+    "noHoldingsData": "暂无持仓数据",
+    "actionRequired": "待处理事项",
+    "actionRequiredCount": "您有 {{count}} 项任务需要处理",
+    "featuredProducts": "推荐产品",
+    "noFeaturedProducts": "暂无推荐产品"
   },
   "accounts": {
     "title": "账户",
@@ -310,6 +315,9 @@
     "requestSubmitted": "申请已提交",
     "submitFailed": "提交申请失败，请重试。",
     "clearAll": "清空全部"
+  },
+  "products": {
+    "minInvestment": "最低投资额"
   }
 }
 

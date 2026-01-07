@@ -1,5 +1,5 @@
-import React from 'react';
-import { ScrollView, RefreshControl, StyleSheet, View, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, RefreshControl, StyleSheet, View, Dimensions, TouchableOpacity, Text as RNText, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import {
   Box,
   VStack,
@@ -8,29 +8,49 @@ import {
   Text,
   Spinner,
   Divider,
+  Badge,
+  BadgeText,
 } from '@gluestack-ui/themed';
 import { VictoryPie, VictoryLabel } from 'victory-native';
-import { usePortfolioSummary, usePortfolioAllocation } from '../../api/hooks';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { usePortfolioSummary, usePortfolioAllocation, useActionTaskCount, useFeaturedProducts } from '../../api/hooks';
 import { formatCurrency, formatPercentage } from '../../utils/format';
-import { colors, spacing } from '../../config/theme';
+import { colors, spacing, borderRadius } from '../../config/theme';
 import { GradientCard } from '../../components/ui/GradientCard';
-import { useTranslation, useLocalizedDate } from '../../lib/i18n';
+import { useTranslation, useLocalizedDate, useLocalizedField } from '../../lib/i18n';
 import { useAuth } from '../../contexts/AuthContext';
-import { useAppName } from '../../contexts/BrandingContext';
+import { useAppName, usePrimaryColor } from '../../contexts/BrandingContext';
 import TenantLogo from '../../components/TenantLogo';
+import type { Product } from '../../types/api';
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function HomeScreen() {
   const { data: portfolio, isLoading, refetch, isRefetching } = usePortfolioSummary();
   const { data: allocation, isLoading: isLoadingAllocation } = usePortfolioAllocation();
+  const { data: actionTaskCount, refetch: refetchActionCount } = useActionTaskCount();
+  const { data: featuredProducts, isLoading: isLoadingFeatured, refetch: refetchFeatured } = useFeaturedProducts();
   const { t } = useTranslation();
   const { formatFullDateTime } = useLocalizedDate();
+  const getLocalizedField = useLocalizedField();
   const { user } = useAuth();
   const appName = useAppName();
+  const primaryColor = usePrimaryColor();
+  const navigation = useNavigation<any>();
 
   const handleRefresh = async () => {
-    await refetch();
+    await Promise.all([refetch(), refetchActionCount(), refetchFeatured()]);
+  };
+
+  const navigateToTasks = () => {
+    // Navigate to CRM tab which shows tasks by default
+    navigation.navigate('CRM', { screen: 'CRMHome' });
+  };
+
+  const navigateToProduct = (product: Product) => {
+    // Navigate to Lab tab with product detail
+    navigation.navigate('Lab', { screen: 'ProductDetail', params: { product } });
   };
 
   if (isLoading) {
@@ -71,6 +91,37 @@ export default function HomeScreen() {
           </VStack>
         </HStack>
 
+        {/* Action Notification Banner */}
+        {actionTaskCount && actionTaskCount > 0 && (
+          <TouchableOpacity onPress={navigateToTasks} activeOpacity={0.7}>
+            <Box
+              style={styles.actionBanner}
+              bg={colors.warning}
+              borderRadius={borderRadius.lg}
+              padding="$3"
+            >
+              <HStack alignItems="center" space="md">
+                <Box
+                  bg="rgba(255,255,255,0.2)"
+                  padding="$2"
+                  borderRadius={borderRadius.md}
+                >
+                  <Ionicons name="alert-circle" size={24} color="white" />
+                </Box>
+                <VStack flex={1}>
+                  <Text size="sm" fontWeight="$bold" color="white">
+                    {t('home.actionRequired')}
+                  </Text>
+                  <Text size="xs" color="white" opacity={0.9}>
+                    {t('home.actionRequiredCount', { count: actionTaskCount })}
+                  </Text>
+                </VStack>
+                <Ionicons name="chevron-forward" size={20} color="white" />
+              </HStack>
+            </Box>
+          </TouchableOpacity>
+        )}
+
         {/* Net Worth Card */}
         <GradientCard variant="primary">
           <VStack space="sm">
@@ -96,6 +147,17 @@ export default function HomeScreen() {
             </HStack>
           </VStack>
         </GradientCard>
+
+        {/* Featured Products Carousel */}
+        <FeaturedProductsCarousel
+          products={featuredProducts || []}
+          isLoading={isLoadingFeatured}
+          onViewAll={() => navigation.navigate('Lab', { screen: 'AllocationLab' })}
+          onProductPress={navigateToProduct}
+          getLocalizedField={getLocalizedField}
+          primaryColor={primaryColor}
+          t={t}
+        />
 
         {/* Asset Allocation Chart */}
         <GradientCard variant="dark">
@@ -310,6 +372,273 @@ function PerformanceMetric({ label, value }: PerformanceMetricProps) {
   );
 }
 
+// Featured Product Card Component
+interface FeaturedProductCardProps {
+  product: Product;
+  onPress: () => void;
+  getLocalizedField: (item: any, field: string) => string;
+}
+
+const RISK_COLORS: Record<string, string> = {
+  low: colors.success,
+  medium: colors.warning,
+  high: colors.error,
+};
+
+// Calculate card width (container padding is 20 on each side)
+const CAROUSEL_CARD_WIDTH = screenWidth - 32 - 40; // 32 = outer padding, 40 = container padding (20*2)
+
+interface FeaturedProductsCarouselProps {
+  products: Product[];
+  isLoading: boolean;
+  onViewAll: () => void;
+  onProductPress: (product: Product) => void;
+  getLocalizedField: (item: any, field: string) => string;
+  primaryColor: string;
+  t: (key: string) => string;
+}
+
+function FeaturedProductsCarousel({
+  products,
+  isLoading,
+  onViewAll,
+  onProductPress,
+  getLocalizedField,
+  primaryColor,
+  t,
+}: FeaturedProductsCarouselProps) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffsetX / CAROUSEL_CARD_WIDTH);
+    setActiveIndex(index);
+  };
+
+  return (
+    <View style={featuredSectionStyles.container}>
+      <View style={featuredSectionStyles.header}>
+        <RNText style={featuredSectionStyles.title}>{t('home.featuredProducts')}</RNText>
+        {products.length > 0 && (
+          <TouchableOpacity onPress={onViewAll} activeOpacity={0.7}>
+            <RNText style={[featuredSectionStyles.viewAll, { color: primaryColor }]}>
+              {t('common.viewAll')}
+            </RNText>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {isLoading ? (
+        <View style={featuredSectionStyles.loadingContainer}>
+          <Spinner size="small" color={colors.primary} />
+        </View>
+      ) : products.length > 0 ? (
+        <>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            decelerationRate="fast"
+            snapToInterval={CAROUSEL_CARD_WIDTH}
+            snapToAlignment="start"
+            contentContainerStyle={featuredSectionStyles.scrollContent}
+          >
+            {products.map((product) => (
+              <FeaturedProductCard
+                key={product.id}
+                product={product}
+                onPress={() => onProductPress(product)}
+                getLocalizedField={getLocalizedField}
+              />
+            ))}
+          </ScrollView>
+
+          {/* Pagination Dots */}
+          {products.length > 1 && (
+            <View style={featuredSectionStyles.pagination}>
+              {products.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    featuredSectionStyles.dot,
+                    index === activeIndex && featuredSectionStyles.dotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+        </>
+      ) : (
+        <View style={featuredSectionStyles.emptyContainer}>
+          <Ionicons name="sparkles-outline" size={32} color={colors.textMuted} />
+          <RNText style={featuredSectionStyles.emptyText}>
+            {t('home.noFeaturedProducts')}
+          </RNText>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function FeaturedProductCard({ product, onPress, getLocalizedField }: FeaturedProductCardProps) {
+  const { t } = useTranslation();
+  const productName = getLocalizedField(
+    { name: product.name, name_zh: product.nameZh },
+    'name'
+  );
+  const riskColor = RISK_COLORS[product.riskLevel] || colors.textMuted;
+
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={productCardStyles.cardWrapper}>
+      <View style={productCardStyles.card}>
+        {/* Header: Name + Risk Badge */}
+        <View style={productCardStyles.header}>
+          <RNText style={productCardStyles.name} numberOfLines={2}>
+            {productName}
+          </RNText>
+          <View style={[productCardStyles.badge, { backgroundColor: riskColor }]}>
+            <RNText style={productCardStyles.badgeText}>
+              {product.riskLevel?.toUpperCase()}
+            </RNText>
+          </View>
+        </View>
+
+        {/* Category */}
+        <RNText style={productCardStyles.category} numberOfLines={1}>
+          {product.assetClass}
+        </RNText>
+
+        {/* Footer: Min Investment */}
+        <View style={productCardStyles.footer}>
+          <RNText style={productCardStyles.label}>
+            {t('products.minInvestment')}
+          </RNText>
+          <RNText style={productCardStyles.value}>
+            {product.currency} {product.minInvestment?.toLocaleString() ?? '—'}
+          </RNText>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const featuredSectionStyles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  viewAll: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  scrollContent: {
+    // No extra padding needed for full-width cards
+  },
+  emptyContainer: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 12,
+  },
+  pagination: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 8,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  dotActive: {
+    backgroundColor: colors.primary,
+    width: 20,
+  },
+});
+
+const productCardStyles = StyleSheet.create({
+  cardWrapper: {
+    width: CAROUSEL_CARD_WIDTH,
+  },
+  card: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 14,
+    padding: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  name: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    lineHeight: 22,
+    marginRight: 12,
+  },
+  badge: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  category: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 16,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  label: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  value: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -317,5 +646,16 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: spacing.md,
+  },
+  actionBanner: {
+    shadowColor: colors.warning,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  featuredProductsContainer: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: 16,
   },
 });

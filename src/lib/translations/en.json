@@ -19,7 +19,8 @@
     "noData": "No data available",
     "comingSoon": "Coming Soon",
     "lastUpdated": "Last updated",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "viewAll": "View All"
   },
   "navigation": {
     "home": "Home",
@@ -109,7 +110,11 @@
     "noPortfolioData": "No portfolio data available",
     "noAllocationData": "No allocation data available",
     "noCurrencyData": "No currency data available",
-    "noHoldingsData": "No holdings data available"
+    "noHoldingsData": "No holdings data available",
+    "actionRequired": "Action Required",
+    "actionRequiredCount": "You have {{count}} task(s) requiring your response",
+    "featuredProducts": "Featured Products",
+    "noFeaturedProducts": "No featured products at this time"
   },
   "accounts": {
     "title": "Accounts",
@@ -310,6 +315,9 @@
     "requestSubmitted": "Request Submitted",
     "submitFailed": "Failed to submit request. Please try again.",
     "clearAll": "Clear All"
+  },
+  "products": {
+    "minInvestment": "Min. Investment"
   }
 }
 

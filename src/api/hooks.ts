@@ -339,6 +339,32 @@ export const useTasks = (status?: string, isArchived?: boolean) => {
   });
 };
 
+// Task response type from API
+interface TaskListResponse {
+  tasks: Task[];
+  total_count: number;
+  pending_count: number;
+}
+
+/**
+ * Get count of tasks requiring client action.
+ * Used for the action notification banner on HomeScreen.
+ */
+export const useActionTaskCount = () => {
+  return useQuery({
+    queryKey: ['actionTaskCount'],
+    queryFn: async () => {
+      const response = await apiClient.get<TaskListResponse>('/client/tasks', {
+        params: { pending_only: true },
+      });
+      return response.data.pending_count;
+    },
+    // Auto-refresh every 30 seconds
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+};
+
 export const useTaskDetail = (taskId: string) => {
   return useQuery({
     queryKey: ['task', taskId],
@@ -516,6 +542,21 @@ export const useModuleProducts = (moduleCode: string) => {
       return response.data.map(p => transformProduct(p, moduleCode));
     },
     enabled: !!moduleCode,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * Fetch featured products for the HomeScreen ad section.
+ * These are products selected by the tenant to highlight to clients.
+ */
+export const useFeaturedProducts = () => {
+  return useQuery({
+    queryKey: ['featuredProducts'],
+    queryFn: async (): Promise<Product[]> => {
+      const response = await apiClient.get<ClientProductApiResponse[]>('/client/featured-products');
+      return response.data.map(p => transformProduct(p, '')); // moduleCode not needed for display
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
