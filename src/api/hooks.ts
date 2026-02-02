@@ -18,6 +18,7 @@ import type {
   ProductDocument,
   ClientProductModuleApiResponse,
   ClientProductApiResponse,
+  ModuleCategory,
 } from '../types/api';
 
 // Auth - Client endpoints
@@ -512,6 +513,7 @@ const transformProductModule = (apiModule: ClientProductModuleApiResponse): Prod
   nameZh: apiModule.name_zh,
   description: apiModule.description || '',
   descriptionZh: apiModule.description_zh,
+  category: (apiModule.category || 'basic') as ModuleCategory,
   isEnabled: apiModule.is_enabled,
   products: apiModule.products.map(p => transformProduct(p, apiModule.code)),
 });

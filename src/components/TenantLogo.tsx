@@ -93,27 +93,14 @@ export default function TenantLogo({
     );
   }
 
-  // Default fallback: Show default app icon
+  // Default fallback: Show app logo
   return (
-    <View 
-      style={[
-        styles.fallback, 
-        { 
-          width: size, 
-          height: size, 
-          borderRadius: size / 2,
-          backgroundColor: primaryColor + '20', // 20% opacity
-        },
-        style
-      ]}
-    >
-      <View style={styles.fallbackTextContainer}>
-        <Image
-          source={require('../../assets/icon.png')}
-          style={[styles.defaultIcon, { width: size * 0.6, height: size * 0.6 }]}
-          resizeMode="contain"
-        />
-      </View>
+    <View style={[styles.container, { width: size, height: size }, style]}>
+      <Image
+        source={require('../../assets/logo.png')}
+        style={[styles.logo, { width: size, height: size }]}
+        resizeMode="contain"
+      />
     </View>
   );
 }
@@ -131,17 +118,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
-  },
-  fallback: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fallbackTextContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  defaultIcon: {
-    opacity: 0.8,
   },
   letterFallback: {
     justifyContent: 'center',

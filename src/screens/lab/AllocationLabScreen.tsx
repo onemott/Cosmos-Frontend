@@ -25,6 +25,7 @@ import { useCart } from '../../contexts/CartContext';
 import { useClientProducts } from '../../api/hooks';
 import { useTranslation, useLocalizedField } from '../../lib/i18n';
 import type { ProductModule, Product } from '../../types/api';
+import { isInvestmentModule } from '../../types/api';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { LabStackParamList } from '../../navigation/types';
 
@@ -54,13 +55,18 @@ export default function AllocationLabScreen() {
     }
   }, [productModules]);
 
-  // Filter products by search query
+  // Filter modules to only show investment-related ones (non-investment goes to Hub > Services)
+  // Then filter products by search query
   const filteredModules = useMemo(() => {
     if (!productModules) return [];
-    if (!searchQuery.trim()) return productModules;
+
+    // Only show investment category modules in the Lab
+    const investmentModules = productModules.filter((m) => isInvestmentModule(m.category));
+
+    if (!searchQuery.trim()) return investmentModules;
 
     const query = searchQuery.toLowerCase();
-    return productModules.map((module) => ({
+    return investmentModules.map((module) => ({
       ...module,
       products: module.products.filter(
         (p) =>

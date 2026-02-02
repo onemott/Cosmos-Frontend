@@ -220,14 +220,27 @@ export interface Product {
   tags: string[];
 }
 
+// Module category type - determines where modules appear in the app
+export type ModuleCategory = 'basic' | 'investment' | 'analytics';
+
 export interface ProductModule {
   code: string;
   name: string;
   nameZh?: string;
   description: string;
   descriptionZh?: string;
+  category: ModuleCategory; // Module category: basic, investment, analytics
   isEnabled: boolean; // Client has access
   products: Product[];
+}
+
+/**
+ * Check if a module category is investment-related.
+ * Investment modules appear in the Lab section.
+ * Non-investment modules appear in the Hub > Services section.
+ */
+export function isInvestmentModule(category: ModuleCategory): boolean {
+  return category === 'investment';
 }
 
 // API Response Types (snake_case from backend)
@@ -252,6 +265,7 @@ export interface ClientProductModuleApiResponse {
   name_zh?: string;
   description?: string;
   description_zh?: string;
+  category: string; // Module category from API: basic, investment, analytics
   is_enabled: boolean;
   products: ClientProductApiResponse[];
 }

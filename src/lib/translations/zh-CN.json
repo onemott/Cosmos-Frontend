@@ -134,7 +134,22 @@
       "documents": "文档",
       "tasks": "任务",
       "calendar": "日历",
-      "meetings": "会议"
+      "meetings": "会议",
+      "services": "服务"
+    },
+    "services": {
+      "title": "服务",
+      "subtitle": "为您提供的其他模块和服务",
+      "searchServices": "搜索服务...",
+      "noSearchResults": "没有匹配的服务",
+      "noServices": "暂无可用服务",
+      "failedToLoad": "加载服务失败",
+      "locked": "已锁定",
+      "categoryBasic": "基础模块",
+      "categoryAnalytics": "分析模块",
+      "noDescription": "暂无描述",
+      "moduleEnabled": "此服务已为您的账户启用",
+      "contactAdvisor": "联系您的顾问以启用此服务"
     },
     "documents": {
       "title": "文档",

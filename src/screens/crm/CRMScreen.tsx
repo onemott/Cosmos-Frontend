@@ -7,8 +7,9 @@ import DocumentsSection from './sections/DocumentsSection';
 import TasksSection from './sections/TasksSection';
 import CalendarSection from './sections/CalendarSection';
 import MeetingsSection from './sections/MeetingsSection';
+import ServicesSection from './sections/ServicesSection';
 
-type CRMTab = 'documents' | 'tasks' | 'calendar' | 'meetings';
+type CRMTab = 'documents' | 'tasks' | 'calendar' | 'meetings' | 'services';
 
 export default function CRMScreen() {
   const [activeTab, setActiveTab] = useState<CRMTab>('tasks');
@@ -19,6 +20,7 @@ export default function CRMScreen() {
     { key: 'tasks', label: t('crm.tabs.tasks') },
     { key: 'calendar', label: t('crm.tabs.calendar') },
     { key: 'meetings', label: t('crm.tabs.meetings') },
+    { key: 'services', label: t('crm.tabs.services') },
   ];
 
   const renderContent = () => {
@@ -31,6 +33,8 @@ export default function CRMScreen() {
         return <CalendarSection />;
       case 'meetings':
         return <MeetingsSection />;
+      case 'services':
+        return <ServicesSection />;
     }
   };
 

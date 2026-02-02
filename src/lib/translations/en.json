@@ -134,7 +134,22 @@
       "documents": "Docs",
       "tasks": "Tasks",
       "calendar": "Calendar",
-      "meetings": "Meetings"
+      "meetings": "Meetings",
+      "services": "Services"
+    },
+    "services": {
+      "title": "Services",
+      "subtitle": "Additional modules and services available to you",
+      "searchServices": "Search services...",
+      "noSearchResults": "No services match your search",
+      "noServices": "No services available",
+      "failedToLoad": "Failed to load services",
+      "locked": "Locked",
+      "categoryBasic": "Basic Module",
+      "categoryAnalytics": "Analytics Module",
+      "noDescription": "No description available",
+      "moduleEnabled": "This service is enabled for your account",
+      "contactAdvisor": "Contact your advisor to enable this service"
     },
     "documents": {
       "title": "Documents",

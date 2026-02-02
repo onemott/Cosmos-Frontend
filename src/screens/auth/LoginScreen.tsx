@@ -175,7 +175,7 @@ export default function LoginScreen() {
               >
                 <VStack space="sm" marginBottom="$8">
                   <Box style={styles.logoContainer}>
-                    <TenantLogo size={64} showLetterFallback />
+                    <TenantLogo size={64} />
                   </Box>
                   <Heading size="3xl" color="white" textAlign="left">
                     {appName}
