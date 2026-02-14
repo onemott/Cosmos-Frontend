@@ -111,17 +111,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [loginMutation, setBranding]);
 
   const logout = useCallback(async () => {
+    // Clear local state first to ensure UI updates immediately
+    // This prevents the user from being stuck if the network request fails
+    await tokenStorage.clearTokens();
+    setIsAuthenticated(false);
+
     try {
+      // Attempt server-side logout, but don't block UI
       await logoutMutation.mutateAsync();
     } catch (error) {
       // Ignore logout errors - we're logging out anyway
       console.log('[AuthContext] Logout request failed, clearing local state');
     }
-    await tokenStorage.clearTokens();
-    // Note: We intentionally do NOT clear branding on logout
-    // This allows the login screen to show the tenant's branding
-    // for returning users (branding persists until a different tenant logs in)
-    setIsAuthenticated(false);
   }, [logoutMutation]);
 
   const isLoading = isInitializing || (isAuthenticated && isLoadingProfile);

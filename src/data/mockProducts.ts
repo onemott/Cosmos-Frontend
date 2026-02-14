@@ -21,6 +21,7 @@ export const MOCK_PRODUCT_MODULES: ProductModule[] = [
   // ============================================================================
   
   {
+    category: 'investment',
     code: 'custom_portfolio',
     name: 'Custom Investment Portfolio',
     description: 'Customized investment portfolio recommendations tailored to individual client needs',
@@ -66,6 +67,7 @@ export const MOCK_PRODUCT_MODULES: ProductModule[] = [
   },
   
   {
+    category: 'investment',
     code: 'eam_products',
     name: 'EAM Investment Products',
     description: 'External Asset Manager specific investment products and solutions',
@@ -111,6 +113,7 @@ export const MOCK_PRODUCT_MODULES: ProductModule[] = [
   },
   
   {
+    category: 'investment',
     code: 'insurance_services',
     name: 'Insurance Services',
     description: 'Life insurance, wealth protection, and insurance-linked investment solutions',
@@ -144,6 +147,7 @@ export const MOCK_PRODUCT_MODULES: ProductModule[] = [
   },
   
   {
+    category: 'investment',
     code: 'cd_solutions',
     name: 'CD Solutions',
     description: 'Certificate of Deposit products with competitive rates and flexible terms',
@@ -189,6 +193,7 @@ export const MOCK_PRODUCT_MODULES: ProductModule[] = [
   },
   
   {
+    category: 'investment',
     code: 'alternative_investments',
     name: 'Alternative Investments',
     description: 'Access to alternative investment opportunities including PE, hedge funds, and real assets',
@@ -234,6 +239,7 @@ export const MOCK_PRODUCT_MODULES: ProductModule[] = [
   },
   
   {
+    category: 'investment',
     code: 'macro_analysis',
     name: 'Macro Analysis',
     description: 'Macroeconomic analysis, market trends, and global economic outlook reports',
@@ -267,6 +273,7 @@ export const MOCK_PRODUCT_MODULES: ProductModule[] = [
   },
   
   {
+    category: 'investment',
     code: 'ai_recommendations',
     name: 'AI Recommendations',
     description: 'AI-powered investment recommendations and portfolio optimization suggestions',
@@ -304,6 +311,7 @@ export const MOCK_PRODUCT_MODULES: ProductModule[] = [
   // ============================================================================
   
   {
+    category: 'investment',
     code: 'private_banking',
     name: 'Private Banking Products',
     description: 'Exclusive private banking products and services for high-net-worth clients',
@@ -325,6 +333,7 @@ export const MOCK_PRODUCT_MODULES: ProductModule[] = [
   },
   
   {
+    category: 'investment',
     code: 'quant_investing',
     name: 'Quantitative Investing',
     description: 'Quantitative investment strategies powered by algorithmic trading and data analysis',
@@ -346,6 +355,7 @@ export const MOCK_PRODUCT_MODULES: ProductModule[] = [
   },
   
   {
+    category: 'investment',
     code: 'expert_advice',
     name: 'Industry Expert Advice',
     description: 'Expert insights and recommendations from industry specialists',
@@ -367,6 +377,7 @@ export const MOCK_PRODUCT_MODULES: ProductModule[] = [
   },
   
   {
+    category: 'investment',
     code: 'risk_assessment',
     name: 'Asset Risk Assessment',
     description: 'Comprehensive asset risk assessment, stress testing, and risk monitoring tools',

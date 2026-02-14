@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useInfiniteQuery, InfiniteData } from '@tanstack/react-query';
 import { apiClient, tokenStorage } from './client';
 import type {
   LoginRequest,
@@ -10,6 +10,7 @@ import type {
   AllocationData,
   Document,
   Task,
+  TasksResponse,
   ClientModule,
   ProductRequestCreate,
   ProductRequestResponse,
@@ -322,17 +323,31 @@ export const getProductDocumentDownloadUrl = (productId: string, documentId: str
 };
 
 // Tasks
-export const useTasks = (status?: string, isArchived?: boolean) => {
-  return useQuery({
-    queryKey: ['tasks', status, isArchived],
-    queryFn: async () => {
-      const params: any = {};
+export const useTasks = (status?: string, isArchived?: boolean, pendingOnly?: boolean) => {
+  return useInfiniteQuery({
+    queryKey: ['tasks', status, isArchived, pendingOnly],
+    queryFn: async ({ pageParam = 0 }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const params: any = {
+        skip: pageParam,
+        limit: 20,
+      };
       if (status) params.status = status;
       if (isArchived !== undefined) params.is_archived = isArchived;
+      if (pendingOnly) params.pending_only = true;
       
-      const response = await apiClient.get<Task[]>('/client/tasks', { params });
+      const response = await apiClient.get<TasksResponse>('/client/tasks', { params });
       return response.data;
     },
+    getNextPageParam: (lastPage: TasksResponse, allPages: TasksResponse[]) => {
+      // Calculate how many items we have loaded so far
+      const loadedCount = allPages.flatMap(page => page.tasks).length;
+      
+      // If loaded count is less than total, return the next skip value
+      // Use total_count from API response (fixed in backend)
+      return loadedCount < lastPage.total_count ? loadedCount : undefined;
+    },
+    initialPageParam: 0,
     // Auto-refresh every 30 seconds to catch EAM updates
     refetchInterval: 30000,
     // Consider data stale after 10 seconds

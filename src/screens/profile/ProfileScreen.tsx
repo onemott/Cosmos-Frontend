@@ -34,6 +34,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage, LANGUAGES, Language } from '../../contexts/LanguageContext';
 import { usePrimaryColor, useAppName } from '../../contexts/BrandingContext';
 import { useChangePassword, useUpdateLanguage } from '../../api/hooks';
+import { apiClient } from '../../api/client';
 import { useTranslation, useLocalizedDate } from '../../lib/i18n';
 
 const RISK_PROFILE_COLORS: Record<string, string> = {
@@ -64,9 +65,20 @@ export default function ProfileScreen() {
   
   // Language modal state
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [helloMessage, setHelloMessage] = useState('');
   
   const changePasswordMutation = useChangePassword();
   const updateLanguageMutation = useUpdateLanguage();
+
+  const handleHello = async () => {
+    try {
+      const res = await apiClient.get('/hello');
+      setHelloMessage(res.data.message);
+    } catch (error) {
+      console.error(error);
+      setHelloMessage('Error fetching hello');
+    }
+  };
 
   const resetPasswordForm = () => {
     setCurrentPassword('');
@@ -130,29 +142,39 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      t('auth.logout'),
-      t('profile.logoutConfirm'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('auth.logout'),
-          style: 'destructive',
-          onPress: async () => {
-            setIsLoggingOut(true);
-            try {
-              await logout();
-              // Navigation is handled automatically by RootNavigator
-              // when isAuthenticated becomes false
-            } catch (error) {
-              console.error('Logout error:', error);
-            } finally {
-              setIsLoggingOut(false);
-            }
+    if (Platform.OS === 'web') {
+      // Use native browser confirm for Web
+      if (window.confirm(t('profile.logoutConfirm'))) {
+        performLogout();
+      }
+    } else {
+      // Use native Alert for iOS/Android
+      Alert.alert(
+        t('auth.logout'),
+        t('profile.logoutConfirm'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('auth.logout'),
+            style: 'destructive',
+            onPress: performLogout,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
+  };
+
+  const performLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      // Navigation is handled automatically by RootNavigator
+      // when isAuthenticated becomes false
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const handleContactSupport = () => {
@@ -383,6 +405,20 @@ export default function ProfileScreen() {
             />
           </VStack>
         </Box>
+
+        <Button
+          variant="outline"
+          borderColor={colors.border}
+          marginTop="$4"
+          onPress={handleHello}
+        >
+          <ButtonText color={colors.textSecondary}>Test Hello API</ButtonText>
+        </Button>
+        {helloMessage ? (
+          <Text color={colors.success} textAlign="center" marginTop="$2">
+            {helloMessage}
+          </Text>
+        ) : null}
 
         {/* Logout Button */}
         <TouchableOpacity

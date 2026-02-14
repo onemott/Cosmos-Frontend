@@ -37,6 +37,8 @@ import { useAppName } from '../../contexts/BrandingContext';
 import TenantLogo from '../../components/TenantLogo';
 import type { AuthStackScreenProps } from '../../navigation/types';
 
+import { ENV } from '../../config/env';
+
 type LoginScreenProps = AuthStackScreenProps<'Login'>;
 
 export default function LoginScreen() {
@@ -96,7 +98,7 @@ export default function LoginScreen() {
 
     if (!email.trim()) {
       newErrors.email = t('auth.emailRequired');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       newErrors.email = t('auth.emailInvalid');
     }
 
@@ -141,7 +143,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <TouchableWithoutFeedback onPress={Platform.OS !== 'web' ? Keyboard.dismiss : undefined}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -316,6 +318,11 @@ export default function LoginScreen() {
                       Test credentials: client1@test.com / Test1234!
                     </Text>
                   </Box>
+
+                  {/* Debug Info - Only for development/troubleshooting */}
+                  <Text size="xs" color={colors.textSecondary} textAlign="center" marginTop="$4">
+                    Server: {ENV.API_BASE_URL}
+                  </Text>
                 </VStack>
               </Animated.View>
             </VStack>

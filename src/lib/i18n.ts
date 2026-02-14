@@ -68,23 +68,27 @@ export function useTranslation() {
  * e.g., getLocalizedField(module, "name", "zh-CN") returns module.name_zh || module.name
  */
 export function getLocalizedField(
-  obj: Record<string, unknown> | null | undefined,
+  obj: any,
   fieldName: string,
   language: Language
 ): string {
   if (!obj) return '';
 
-  const record = obj as Record<string, unknown>;
-
   if (language === 'zh-CN') {
-    const zhField = `${fieldName}_zh`;
-    const zhValue = record[zhField];
-    if (zhValue && typeof zhValue === 'string') {
-      return zhValue;
+    // Try snake_case first (API response style)
+    const snakeField = `${fieldName}_zh`;
+    if (obj[snakeField] && typeof obj[snakeField] === 'string') {
+      return obj[snakeField];
+    }
+
+    // Try camelCase second (Internal model style)
+    const camelField = `${fieldName}Zh`;
+    if (obj[camelField] && typeof obj[camelField] === 'string') {
+      return obj[camelField];
     }
   }
 
-  const value = record[fieldName];
+  const value = obj[fieldName];
   return typeof value === 'string' ? value : '';
 }
 
@@ -95,7 +99,7 @@ export function useLocalizedField() {
   const { language } = useLanguage();
 
   return useCallback(
-    (obj: Record<string, unknown> | null | undefined, fieldName: string): string => {
+    (obj: any, fieldName: string): string => {
       return getLocalizedField(obj, fieldName, language);
     },
     [language]

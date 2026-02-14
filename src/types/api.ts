@@ -186,6 +186,14 @@ export interface Task {
   is_archived?: boolean;
 }
 
+export interface TasksResponse {
+  tasks: Task[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+}
+
 export interface TaskActionRequest {
   comment: string;
 }

@@ -18,6 +18,7 @@ import { usePortfolioSummary, usePortfolioAllocation, useActionTaskCount, useFea
 import { formatCurrency, formatPercentage } from '../../utils/format';
 import { colors, spacing, borderRadius } from '../../config/theme';
 import { GradientCard } from '../../components/ui/GradientCard';
+import { ChartSkeleton } from '../../components/ui/Skeleton';
 import { useTranslation, useLocalizedDate, useLocalizedField } from '../../lib/i18n';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppName, usePrimaryColor } from '../../contexts/BrandingContext';
@@ -56,7 +57,7 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <Box flex={1} justifyContent="center" alignItems="center" bg={colors.background}>
-        <Spinner size="large" color={colors.primary} />
+        <ChartSkeleton />
       </Box>
     );
   }
@@ -92,7 +93,7 @@ export default function HomeScreen() {
         </HStack>
 
         {/* Action Notification Banner */}
-        {actionTaskCount && actionTaskCount > 0 && (
+        {(actionTaskCount || 0) > 0 && (
           <TouchableOpacity onPress={navigateToTasks} activeOpacity={0.7}>
             <Box
               style={styles.actionBanner}

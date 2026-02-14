@@ -1,5 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '../utils/storage';
 import { ENV } from '../config/env';
 
 const TOKEN_KEY = 'cosmos_access_token';
@@ -44,7 +44,7 @@ const onRefreshFailed = () => {
 // Request interceptor: Attach token
 apiClient.interceptors.request.use(
   async (config) => {
-    const token = await SecureStore.getItemAsync(TOKEN_KEY);
+    const token = await storage.getItem(TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -68,8 +68,8 @@ apiClient.interceptors.response.use(
       const errorData = error.response.data as { detail?: string } | undefined;
       if (errorData?.detail?.toLowerCase().includes('deactivated')) {
         // Clear tokens and notify auth context
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+        await storage.deleteItem(TOKEN_KEY);
+        await storage.deleteItem(REFRESH_TOKEN_KEY);
         
         if (onAuthFailedCallback) {
           onAuthFailedCallback();
@@ -99,7 +99,7 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+        const refreshToken = await storage.getItem(REFRESH_TOKEN_KEY);
         if (!refreshToken) {
           throw new Error('No refresh token');
         }
@@ -110,8 +110,8 @@ apiClient.interceptors.response.use(
         );
 
         const { access_token, refresh_token } = response.data;
-        await SecureStore.setItemAsync(TOKEN_KEY, access_token);
-        await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refresh_token);
+        await storage.setItem(TOKEN_KEY, access_token);
+        await storage.setItem(REFRESH_TOKEN_KEY, refresh_token);
 
         isRefreshing = false;
         onTokenRefreshed(access_token);
@@ -123,8 +123,8 @@ apiClient.interceptors.response.use(
         onRefreshFailed();
         
         // Refresh failed, clear tokens and notify AuthContext
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
-        await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+        await storage.deleteItem(TOKEN_KEY);
+        await storage.deleteItem(REFRESH_TOKEN_KEY);
         
         // Notify AuthContext that auth has failed
         if (onAuthFailedCallback) {
@@ -142,18 +142,18 @@ apiClient.interceptors.response.use(
 // Token management helpers
 export const tokenStorage = {
   async setTokens(accessToken: string, refreshToken: string) {
-    await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+    await storage.setItem(TOKEN_KEY, accessToken);
+    await storage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   },
   async getAccessToken() {
-    return await SecureStore.getItemAsync(TOKEN_KEY);
+    return await storage.getItem(TOKEN_KEY);
   },
   async getRefreshToken() {
-    return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+    return await storage.getItem(REFRESH_TOKEN_KEY);
   },
   async clearTokens() {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
-    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+    await storage.deleteItem(TOKEN_KEY);
+    await storage.deleteItem(REFRESH_TOKEN_KEY);
   },
   
   /**
@@ -162,7 +162,7 @@ export const tokenStorage = {
    */
   async validateToken(): Promise<boolean> {
     try {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
+      const token = await storage.getItem(TOKEN_KEY);
       if (!token) {
         return false;
       }
