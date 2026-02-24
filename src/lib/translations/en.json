@@ -182,6 +182,8 @@
       "dueDate": "Due Date",
       "actionRequired": "{{count}} task(s) require your response",
       "messageFromAdvisor": "Message from your advisor",
+      "eamMessage": "Advisor Message",
+      "sentToClientAt": "Sent to client",
       "addComment": "Add a comment (required for declining):",
       "yourComment": "Your comment...",
       "approve": "Approve",

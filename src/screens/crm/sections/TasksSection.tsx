@@ -497,6 +497,12 @@ export default function TasksSection() {
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {(selectedTask.proposal_data as any).eam_message}
                       </Text>
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {(selectedTask.proposal_data as any)?.sent_to_client_at && (
+                        <Text size="xs" color={colors.textMuted} marginTop="$2">
+                          {t('crm.tasks.sentToClientAt')} {formatDate((selectedTask.proposal_data as any).sent_to_client_at)}
+                        </Text>
+                      )}
                     </Box>
                   )}
 

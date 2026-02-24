@@ -182,6 +182,8 @@
       "dueDate": "截止日期",
       "actionRequired": "{{count}} 项任务需要您的回复",
       "messageFromAdvisor": "顾问留言",
+      "eamMessage": "顾问留言",
+      "sentToClientAt": "发送给客户",
       "addComment": "添加评论（拒绝时必填）：",
       "yourComment": "您的评论...",
       "approve": "批准",
