@@ -208,6 +208,26 @@
         "declined": "Declined",
         "draft": "Draft",
         "expired": "Expired"
+      },
+      "productRequest": {
+        "title": "Product Request",
+        "requestedAmount": "Requested",
+        "minInvestment": "Min. Investment",
+        "totalRequested": "Total Requested",
+        "totalMinInvestment": "Total Min. Investment",
+        "clientNotes": "Client Notes"
+      },
+      "interest": {
+        "title": "Interest Request",
+        "product": "Product",
+        "type": "Interest Type",
+        "submittedAt": "Submitted At",
+        "clientNotes": "Client Notes",
+        "types": {
+          "consult": "Consultation",
+          "reserve": "Reservation",
+          "favorite": "Favorite"
+        }
       }
     },
     "calendar": {

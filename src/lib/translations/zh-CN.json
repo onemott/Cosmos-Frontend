@@ -208,6 +208,26 @@
         "declined": "已拒绝",
         "draft": "草稿",
         "expired": "已过期"
+      },
+      "productRequest": {
+        "title": "产品申请",
+        "requestedAmount": "申请金额",
+        "minInvestment": "最低投资额",
+        "totalRequested": "申请总额",
+        "totalMinInvestment": "最低投资总额",
+        "clientNotes": "客户备注"
+      },
+      "interest": {
+        "title": "意向申请",
+        "product": "产品",
+        "type": "意向类型",
+        "submittedAt": "提交时间",
+        "clientNotes": "客户备注",
+        "types": {
+          "consult": "咨询",
+          "reserve": "预约",
+          "favorite": "收藏"
+        }
       }
     },
     "calendar": {

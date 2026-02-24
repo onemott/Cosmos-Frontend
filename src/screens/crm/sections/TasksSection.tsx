@@ -28,7 +28,7 @@ import { colors, spacing, borderRadius } from '../../../config/theme';
 import { TaskCard } from '../../../components/crm/TaskCard';
 import { TaskCardSkeleton } from '../../../components/ui/Skeleton';
 import { useTasks, useTaskDetail, useApproveTask, useDeclineTask, useArchiveTask } from '../../../api/hooks';
-import { formatDate } from '../../../utils/format';
+import { formatCurrency, formatDate } from '../../../utils/format';
 import { useTranslation, useLocalizedDate } from '../../../lib/i18n';
 import type { Task, TasksResponse } from '../../../types/api';
 
@@ -39,6 +39,8 @@ export default function TasksSection() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [isDetailVisible, setIsDetailVisible] = useState(false);
   const [actionComment, setActionComment] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const { t } = useTranslation();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { formatFullDateTime } = useLocalizedDate();
@@ -190,27 +192,37 @@ export default function TasksSection() {
   const handleTaskPress = (task: Task) => {
     setSelectedTaskId(task.id);
     setActionComment('');
+    setActionError(null);
+    setActionSuccess(null);
     setIsDetailVisible(true);
   };
 
   const handleCloseDetail = () => {
     setIsDetailVisible(false);
     setSelectedTaskId(null);
+    setActionComment('');
+    setActionError(null);
+    setActionSuccess(null);
   };
 
   const handleApprove = async () => {
     if (!selectedTaskId) return;
     
     try {
+      setActionError(null);
+      setActionSuccess(null);
       await approveMutation.mutateAsync({
         taskId: selectedTaskId,
         comment: actionComment,
       });
+      setActionSuccess(t('crm.tasks.approveSuccess'));
       Alert.alert(t('common.success'), t('crm.tasks.approveSuccess'));
       handleCloseDetail();
       refetch();
     } catch (error) {
-      Alert.alert(t('common.error'), t('crm.tasks.approveFailed'));
+      const message = (error as any)?.response?.data?.detail || t('crm.tasks.approveFailed');
+      setActionError(message);
+      Alert.alert(t('common.error'), message);
     }
   };
 
@@ -223,15 +235,20 @@ export default function TasksSection() {
     }
     
     try {
+      setActionError(null);
+      setActionSuccess(null);
       await declineMutation.mutateAsync({
         taskId: selectedTaskId,
         comment: actionComment,
       });
+      setActionSuccess(t('crm.tasks.declineSuccess'));
       Alert.alert(t('common.success'), t('crm.tasks.declineSuccess'));
       handleCloseDetail();
       refetch();
     } catch (error) {
-      Alert.alert(t('common.error'), t('crm.tasks.declineFailed'));
+      const message = (error as any)?.response?.data?.detail || t('crm.tasks.declineFailed');
+      setActionError(message);
+      Alert.alert(t('common.error'), message);
     }
   };
 
@@ -247,11 +264,15 @@ export default function TasksSection() {
           text: t('crm.tasks.archive'),
           onPress: async () => {
             try {
+              setActionError(null);
+              setActionSuccess(null);
               await archiveMutation.mutateAsync(selectedTaskId);
               handleCloseDetail();
               refetch(); // Refresh list to remove archived task
             } catch (error) {
-              Alert.alert(t('common.error'), t('crm.tasks.archiveFailed'));
+              const message = (error as any)?.response?.data?.detail || t('crm.tasks.archiveFailed');
+              setActionError(message);
+              Alert.alert(t('common.error'), message);
             }
           },
         },
@@ -485,16 +506,19 @@ export default function TasksSection() {
                     <ProductRequestDetails proposalData={selectedTask.proposal_data as any} />
                   )}
 
+                  {selectedTask.task_type === 'lightweight_interest' && selectedTask.proposal_data && (
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    <LightweightInterestDetails proposalData={selectedTask.proposal_data as any} />
+                  )}
+
                   {/* Action Area */}
-                  {selectedTask.workflow_state === 'pending_client' && (
+                  {selectedTask.requires_action && (
                     <VStack space="md" marginTop="$4">
                       <Divider bg={colors.border} />
-                      <Text size="sm" color={colors.textSecondary}>
-                        Add a comment (required for declining):
-                      </Text>
+                      <Text size="sm" color={colors.textSecondary}>{t('crm.tasks.addComment')}</Text>
                       <TextInput
                         style={styles.commentInput}
-                        placeholder="Your comment..."
+                        placeholder={t('crm.tasks.yourComment')}
                         placeholderTextColor={colors.textMuted}
                         value={actionComment}
                         onChangeText={setActionComment}
@@ -502,22 +526,32 @@ export default function TasksSection() {
                         numberOfLines={3}
                       />
 
+                      {actionError ? (
+                        <Text size="sm" color={colors.error}>
+                          {actionError}
+                        </Text>
+                      ) : actionSuccess ? (
+                        <Text size="sm" color={colors.success}>
+                          {actionSuccess}
+                        </Text>
+                      ) : null}
+
                       <HStack space="md">
                         <Button
                           flex={1}
                           bg={colors.error}
                           onPress={handleDecline}
-                          disabled={declineMutation.isPending}
+                          isDisabled={declineMutation.isPending}
                         >
-                          <ButtonText>Decline</ButtonText>
+                          <ButtonText>{t('crm.tasks.decline')}</ButtonText>
                         </Button>
                         <Button
                           flex={1}
                           bg={colors.success}
                           onPress={handleApprove}
-                          disabled={approveMutation.isPending}
+                          isDisabled={approveMutation.isPending}
                         >
-                          <ButtonText>Approve</ButtonText>
+                          <ButtonText>{t('crm.tasks.approve')}</ButtonText>
                         </Button>
                       </HStack>
                     </VStack>
@@ -535,9 +569,9 @@ export default function TasksSection() {
                         variant="outline"
                         borderColor={colors.textMuted}
                         onPress={handleArchive}
-                        disabled={archiveMutation.isPending}
+                        isDisabled={archiveMutation.isPending}
                       >
-                        <ButtonText color={colors.textSecondary}>Archive Task</ButtonText>
+                        <ButtonText color={colors.textSecondary}>{t('crm.tasks.archiveTask')}</ButtonText>
                       </Button>
                     </VStack>
                   )}
@@ -581,6 +615,18 @@ function ProductRequestDetails({ proposalData }: ProductRequestDetailsProps) {
   const totalMin = proposalData.total_min_investment;
   const totalRequested = proposalData.total_requested_amount;
   const clientNotes = proposalData.client_notes;
+  const hasCurrency = orders.find((order) => order.currency)?.currency;
+  const primaryCurrency =
+    orders.length > 0 && orders.every((order) => order.currency === orders[0].currency)
+      ? orders[0].currency
+      : hasCurrency || 'USD';
+  const computedTotalRequested = orders.reduce((sum, order) => {
+    const amount = order.requested_amount ?? order.min_investment ?? 0;
+    return sum + amount;
+  }, 0);
+  const computedTotalMin = orders.reduce((sum, order) => sum + (order.min_investment ?? 0), 0);
+  const totalRequestedValue = totalRequested ?? computedTotalRequested;
+  const totalMinValue = totalMin ?? computedTotalMin;
   
   if (orders.length === 0) {
     return null;
@@ -596,7 +642,7 @@ function ProductRequestDetails({ proposalData }: ProductRequestDetailsProps) {
       <HStack alignItems="center" space="sm" marginBottom="$3">
         <Ionicons name="cart" size={16} color={colors.primary} />
         <Text size="sm" color={colors.primary} fontWeight="$semibold">
-          {t('cart.title')}
+          {t('crm.tasks.productRequest.title')}
         </Text>
       </HStack>
       
@@ -623,12 +669,15 @@ function ProductRequestDetails({ proposalData }: ProductRequestDetailsProps) {
                   </Text>
                 </VStack>
                 <VStack alignItems="flex-end">
+                  <Text size="xs" color={colors.textMuted}>
+                    {t('crm.tasks.productRequest.requestedAmount')}
+                  </Text>
                   <Text size="sm" color="white" fontWeight="$bold">
-                    {requestedAmount} {order.currency}
+                    {formatCurrency(requestedAmount, order.currency)}
                   </Text>
                   {isAboveMin && (
                     <Text size="xs" color={colors.success}>
-                      {t('lab.allocation.minInvestment')}: {order.min_investment}
+                      {t('crm.tasks.productRequest.minInvestment')}: {formatCurrency(order.min_investment, order.currency)}
                     </Text>
                   )}
                 </VStack>
@@ -644,19 +693,19 @@ function ProductRequestDetails({ proposalData }: ProductRequestDetailsProps) {
       <VStack space="xs">
         <HStack justifyContent="space-between">
           <Text size="sm" color={colors.textSecondary}>
-            {t('lab.allocation.totalInvestment')}
+            {t('crm.tasks.productRequest.totalRequested')}
           </Text>
           <Text size="sm" color="white" fontWeight="$bold">
-             {totalRequested}
+            {formatCurrency(totalRequestedValue, primaryCurrency)}
           </Text>
         </HStack>
-        {totalMin && totalMin !== totalRequested && (
+        {totalMinValue !== totalRequestedValue && (
           <HStack justifyContent="space-between">
             <Text size="xs" color={colors.textMuted}>
-              Total Min Required
+              {t('crm.tasks.productRequest.totalMinInvestment')}
             </Text>
             <Text size="xs" color={colors.textMuted}>
-               {totalMin}
+              {formatCurrency(totalMinValue, primaryCurrency)}
             </Text>
           </HStack>
         )}
@@ -664,11 +713,94 @@ function ProductRequestDetails({ proposalData }: ProductRequestDetailsProps) {
       
       {clientNotes && (
         <Box marginTop="$3" padding="$2" bg={`${colors.textSecondary}20`} borderRadius={borderRadius.sm}>
-          <Text size="xs" color={colors.textMuted} fontStyle="italic">
-            "{clientNotes}"
+          <Text size="xs" color={colors.textMuted} marginBottom="$1">
+            {t('crm.tasks.productRequest.clientNotes')}
+          </Text>
+          <Text size="sm" color="white">
+            {clientNotes}
           </Text>
         </Box>
       )}
+    </Box>
+  );
+}
+
+interface LightweightInterestDetailsProps {
+  proposalData: {
+    product_name?: string;
+    module_code?: string;
+    interest_type?: string;
+    client_notes?: string;
+    submitted_at?: string;
+  };
+}
+
+function LightweightInterestDetails({ proposalData }: LightweightInterestDetailsProps) {
+  const { t } = useTranslation();
+
+  if (!proposalData.product_name) {
+    return null;
+  }
+
+  const interestLabel = proposalData.interest_type
+    ? t(`crm.tasks.interest.types.${proposalData.interest_type}`)
+    : t('common.noData');
+  
+  return (
+    <Box
+      bg={colors.surface}
+      borderRadius={borderRadius.md}
+      padding="$3"
+      marginTop="$2"
+    >
+      <HStack alignItems="center" space="sm" marginBottom="$3">
+        <Ionicons name="chatbubble-ellipses" size={16} color={colors.primary} />
+        <Text size="sm" color={colors.primary} fontWeight="$semibold">
+          {t('crm.tasks.interest.title')}
+        </Text>
+      </HStack>
+      
+      <VStack space="sm">
+        <VStack space="xs">
+          <Text size="xs" color={colors.textMuted}>{t('crm.tasks.interest.product')}</Text>
+          <Text size="sm" color="white" fontWeight="$medium">
+            {proposalData.product_name}
+          </Text>
+          {proposalData.module_code && (
+            <Text size="xs" color={colors.textMuted}>
+              {proposalData.module_code}
+            </Text>
+          )}
+        </VStack>
+
+        <HStack justifyContent="space-between">
+          <VStack space="xs">
+            <Text size="xs" color={colors.textMuted}>{t('crm.tasks.interest.type')}</Text>
+            <Text size="sm" color="white">
+              {interestLabel}
+            </Text>
+          </VStack>
+          {proposalData.submitted_at && (
+            <VStack space="xs" alignItems="flex-end">
+              <Text size="xs" color={colors.textMuted}>{t('crm.tasks.interest.submittedAt')}</Text>
+              <Text size="sm" color="white">
+                {formatDate(proposalData.submitted_at)}
+              </Text>
+            </VStack>
+          )}
+        </HStack>
+
+        {proposalData.client_notes && (
+          <Box padding="$2" bg={`${colors.textSecondary}20`} borderRadius={borderRadius.sm}>
+            <Text size="xs" color={colors.textMuted} marginBottom="$1">
+              {t('crm.tasks.interest.clientNotes')}
+            </Text>
+            <Text size="sm" color="white">
+              {proposalData.client_notes}
+            </Text>
+          </Box>
+        )}
+      </VStack>
     </Box>
   );
 }

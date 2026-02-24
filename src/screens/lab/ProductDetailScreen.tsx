@@ -3,9 +3,12 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  View,
   Alert,
   RefreshControl,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {
   Box,
@@ -15,9 +18,12 @@ import {
   Badge,
   BadgeText,
   Spinner,
+  Button,
+  ButtonText,
+  Divider,
 } from '@gluestack-ui/themed';
 import { Ionicons } from '@expo/vector-icons';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import { colors, spacing, borderRadius } from '../../config/theme';
 import { formatCurrency } from '../../utils/format';
 import { DocumentViewer } from '../../components/documents/DocumentViewer';
@@ -25,6 +31,7 @@ import {
   useProductDocuments,
   getProductDocumentDownloadUrl,
   getAccessToken,
+  useSubmitLightweightInterest,
 } from '../../api/hooks';
 import type { LabStackScreenProps } from '../../navigation/types';
 import type { Product, ProductDocument } from '../../types/api';
@@ -80,7 +87,6 @@ type RouteParams = {
 
 export default function ProductDetailScreen() {
   const route = useRoute<LabStackScreenProps<'ProductDetail'>['route']>();
-  const navigation = useNavigation();
   const { product } = route.params as RouteParams;
 
   const [activeTab, setActiveTab] = useState<'details' | 'documents'>('details');
@@ -88,6 +94,11 @@ export default function ProductDetailScreen() {
   const [isViewerVisible, setIsViewerVisible] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isInterestModalVisible, setIsInterestModalVisible] = useState(false);
+  const [interestType, setInterestType] = useState<'consult' | 'reserve' | 'favorite'>('consult');
+  const [interestNotes, setInterestNotes] = useState('');
+  const [interestError, setInterestError] = useState<string | null>(null);
+  const [interestSuccess, setInterestSuccess] = useState<string | null>(null);
 
   const {
     data: documents,
@@ -96,6 +107,8 @@ export default function ProductDetailScreen() {
     isRefetching,
     error: documentsError,
   } = useProductDocuments(product.id);
+  
+  const interestMutation = useSubmitLightweightInterest();
 
   // Debug: Log product documents fetch status
   React.useEffect(() => {
@@ -210,6 +223,39 @@ export default function ProductDetailScreen() {
     if (!selectedDocument) return null;
     return getProductDocumentDownloadUrl(product.id, selectedDocument.id);
   }, [selectedDocument, product.id]);
+  
+  const handleSubmitInterest = async () => {
+    try {
+      setInterestError(null);
+      setInterestSuccess(null);
+      const result = await interestMutation.mutateAsync({
+        product_id: product.id,
+        product_name: product.name,
+        module_code: product.moduleCode || 'lab',
+        interest_type: interestType,
+        client_notes: interestNotes.trim() ? interestNotes.trim() : undefined,
+      });
+      setInterestSuccess(result.message);
+      Alert.alert(
+        'Submitted',
+        result.message,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setIsInterestModalVisible(false);
+              setInterestNotes('');
+              setInterestType('consult');
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Failed to submit interest';
+      setInterestError(message);
+      Alert.alert('Error', message);
+    }
+  };
 
   const renderDetailsTab = () => (
     <VStack space="lg" padding="$4">
@@ -237,6 +283,14 @@ export default function ProductDetailScreen() {
       </VStack>
 
       {/* Description */}
+      <Button
+        bg={colors.primary}
+        onPress={() => setIsInterestModalVisible(true)}
+      >
+        <Ionicons name="chatbubble-ellipses-outline" size={16} color="white" />
+        <ButtonText marginLeft="$2">Consult Advisor</ButtonText>
+      </Button>
+      
       <Box bg={colors.surface} padding="$4" borderRadius={borderRadius.lg}>
         <Text size="sm" color={colors.textMuted} marginBottom="$2">
           Description
@@ -460,6 +514,108 @@ export default function ProductDetailScreen() {
         onDownload={handleDownload}
         onShare={handleShare}
       />
+      
+      <Modal
+        visible={isInterestModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsInterestModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalContainer}
+        >
+          <Box bg="rgba(0,0,0,0.6)" style={StyleSheet.absoluteFill} />
+          <Box bg={colors.surface} borderRadius={borderRadius.xl} padding="$5" width="90%">
+            <HStack justifyContent="space-between" alignItems="center" marginBottom="$4">
+              <Text size="lg" fontWeight="$semibold" color="white">
+                Express Interest
+              </Text>
+              <TouchableOpacity onPress={() => setIsInterestModalVisible(false)}>
+                <Ionicons name="close" size={22} color={colors.textMuted} />
+              </TouchableOpacity>
+            </HStack>
+            
+            <VStack space="md">
+              <VStack space="sm">
+                <Text size="sm" color={colors.textSecondary}>
+                  Interest Type
+                </Text>
+                <HStack space="sm" flexWrap="wrap">
+                  {[
+                    { key: 'consult', label: 'Consult' },
+                    { key: 'reserve', label: 'Reserve' },
+                    { key: 'favorite', label: 'Favorite' },
+                  ].map((option) => (
+                    <TouchableOpacity
+                      key={option.key}
+                      onPress={() => setInterestType(option.key as 'consult' | 'reserve' | 'favorite')}
+                      style={[
+                        styles.interestOption,
+                        interestType === option.key && styles.interestOptionActive,
+                      ]}
+                    >
+                      <Text
+                        size="sm"
+                        color={interestType === option.key ? 'white' : colors.textSecondary}
+                        fontWeight={interestType === option.key ? '$semibold' : '$normal'}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </HStack>
+              </VStack>
+              
+              <VStack space="sm">
+                <Text size="sm" color={colors.textSecondary}>
+                  Message
+                </Text>
+                <TextInput
+                  style={styles.interestInput}
+                  placeholder="Optional notes..."
+                  placeholderTextColor={colors.textMuted}
+                  value={interestNotes}
+                  onChangeText={setInterestNotes}
+                  multiline
+                  numberOfLines={3}
+                />
+              </VStack>
+              
+              <Divider bg={colors.border} />
+              {interestError ? (
+                <Text size="sm" color={colors.error}>
+                  {interestError}
+                </Text>
+              ) : interestSuccess ? (
+                <Text size="sm" color={colors.success}>
+                  {interestSuccess}
+                </Text>
+              ) : null}
+              <HStack space="md">
+                <Button
+                  flex={1}
+                  variant="outline"
+                  borderColor={colors.textMuted}
+                  onPress={() => setIsInterestModalVisible(false)}
+                >
+                  <ButtonText color={colors.textSecondary}>Cancel</ButtonText>
+                </Button>
+                <Button
+                  flex={1}
+                  bg={colors.primary}
+                  onPress={handleSubmitInterest}
+                  isDisabled={interestMutation.isPending}
+                >
+                  <ButtonText color="white">
+                    {interestMutation.isPending ? 'Submitting...' : 'Submit'}
+                  </ButtonText>
+                </Button>
+              </HStack>
+            </VStack>
+          </Box>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Loading overlay */}
       {isDownloading && (
@@ -515,6 +671,34 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: spacing.xl,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  interestOption: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  interestOptionActive: {
+    borderColor: colors.primary,
+    backgroundColor: `${colors.primary}30`,
+  },
+  interestInput: {
+    minHeight: 90,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.lg,
+    padding: spacing.sm,
+    color: 'white',
+    backgroundColor: colors.surfaceHighlight,
+    textAlignVertical: 'top',
   },
 });
 

@@ -14,6 +14,8 @@ import type {
   ClientModule,
   ProductRequestCreate,
   ProductRequestResponse,
+  LightweightInterestCreate,
+  LightweightInterestResponse,
   ProductModule,
   Product,
   ProductDocument,
@@ -474,6 +476,22 @@ export const useSubmitProductRequest = () => {
     },
     onSuccess: () => {
       // Invalidate tasks so they refresh with the new request
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+};
+
+export const useSubmitLightweightInterest = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (request: LightweightInterestCreate) => {
+      const response = await apiClient.post<LightweightInterestResponse>(
+        '/client/tasks/lightweight-interest',
+        request
+      );
+      return response.data;
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });

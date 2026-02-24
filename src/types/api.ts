@@ -311,6 +311,19 @@ export interface ProductRequestResponse {
   products_count: number;
 }
 
+export interface LightweightInterestCreate {
+  product_id: string;
+  product_name: string;
+  module_code: string;
+  interest_type: 'consult' | 'reserve' | 'favorite';
+  client_notes?: string;
+}
+
+export interface LightweightInterestResponse {
+  task_id: string;
+  message: string;
+}
+
 // Product Documents (for viewing product info materials)
 export interface ProductDocument {
   id: string;

@@ -45,6 +45,7 @@ const TASK_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   document_review: 'document',
   kyc_review: 'person-circle',
   product_request: 'cart',
+  lightweight_interest: 'chatbubble-ellipses',
   general: 'checkbox',
 };
 
