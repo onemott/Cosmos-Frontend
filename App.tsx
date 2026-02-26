@@ -22,6 +22,8 @@ import { CartProvider } from './src/contexts/CartContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
 // 引入全局错误边界组件
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+// 引入隐私政策模态框组件
+import { PrivacyModal } from './src/components/PrivacyModal';
 // 引入根导航器组件，负责整个应用的导航结构
 import RootNavigator from './src/navigation/RootNavigator';
 
@@ -65,6 +67,8 @@ export default function App() {
                 <CartProvider>
                   {/* RootNavigator：应用主导航，渲染所有页面及路由逻辑 */}
                   <RootNavigator />
+                  {/* 隐私政策同意模态框：确保用户同意隐私政策后才能继续使用 */}
+                  <PrivacyModal />
                 </CartProvider>
               </AuthProvider>
             </BrandingProvider>

@@ -36,6 +36,8 @@ export type CRMStackParamList = {
 
 export type ProfileStackParamList = {
   ProfileScreen: undefined;
+  PrivacyPolicy: undefined;
+  Notifications: undefined;
 };
 
 export type RootStackParamList = {

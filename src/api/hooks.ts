@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient, useInfiniteQuery, InfiniteData } from '@tanstack/react-query';
 import { apiClient, tokenStorage } from './client';
+import { notificationsApi } from './notifications';
+import { systemApi, SystemConfig } from './system';
 import type {
   LoginRequest,
   LoginResponse,
@@ -23,6 +25,52 @@ import type {
   ClientProductApiResponse,
   ModuleCategory,
 } from '../types/api';
+
+// Notifications
+export const useNotifications = (skip = 0, limit = 20) => {
+  return useQuery({
+    queryKey: ['notifications', skip, limit],
+    queryFn: () => notificationsApi.list(skip, limit),
+  });
+};
+
+export const useUnreadNotificationsCount = () => {
+  return useQuery({
+    queryKey: ['notifications', 'unread'],
+    queryFn: notificationsApi.getUnreadCount,
+    refetchInterval: 60000, // Poll every minute
+  });
+};
+
+export const useMarkNotificationRead = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: notificationsApi.markRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+export const useMarkAllNotificationsRead = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: notificationsApi.markAllRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+export const useDeleteNotification = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: notificationsApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
 
 // Auth - Client endpoints
 export const useLogin = () => {
@@ -493,6 +541,35 @@ export const useSubmitLightweightInterest = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+};
+
+// System Config
+export const useSystemConfig = (key: string) => {
+  return useQuery({
+    queryKey: ['systemConfig', key],
+    queryFn: () => systemApi.getConfig(key),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+export const useAgreementStatus = (type: string = 'privacy_policy', enabled: boolean = true) => {
+  return useQuery({
+    queryKey: ['agreementStatus', type],
+    queryFn: () => systemApi.getAgreementStatus(type),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useRecordAgreement = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ type, version }: { type: string; version: string }) =>
+      systemApi.recordAgreement(type, version),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['agreementStatus', variables.type] });
     },
   });
 };

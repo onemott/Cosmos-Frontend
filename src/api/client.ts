@@ -24,6 +24,11 @@ export const apiClient = axios.create({
   },
 });
 
+// Update baseURL dynamically if ENV changes (for hot reloading)
+if (process.env.NODE_ENV === 'development') {
+  console.log('[API Client] Base URL:', ENV.API_BASE_URL);
+}
+
 // Refresh lock to prevent race conditions when multiple requests fail at once
 let isRefreshing = false;
 let refreshSubscribers: Array<(token: string) => void> = [];

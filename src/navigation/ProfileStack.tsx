@@ -1,6 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import PrivacyScreen from '../screens/profile/PrivacyScreen';
+import NotificationScreen from '../screens/profile/NotificationScreen';
 import { useTranslation } from '../lib/i18n';
 import type { ProfileStackParamList } from './types';
 import { colors } from '../config/theme';
@@ -27,6 +29,16 @@ export default function ProfileStack() {
         name="ProfileScreen"
         component={ProfileScreen}
         options={{ title: t('navigation.profile') }}
+      />
+      <Stack.Screen
+        name="PrivacyPolicy"
+        component={PrivacyScreen}
+        options={{ title: t('profile.privacyPolicy') }}
+      />
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationScreen}
+        options={{ title: t('profile.notifications') }}
       />
     </Stack.Navigator>
   );

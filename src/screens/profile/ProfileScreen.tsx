@@ -8,6 +8,9 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ProfileStackParamList } from '../../navigation/types';
 import {
   Box,
   VStack,
@@ -33,7 +36,7 @@ import { colors, spacing, borderRadius } from '../../config/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage, LANGUAGES, Language } from '../../contexts/LanguageContext';
 import { usePrimaryColor, useAppName } from '../../contexts/BrandingContext';
-import { useChangePassword, useUpdateLanguage } from '../../api/hooks';
+import { useChangePassword, useUpdateLanguage, useUnreadNotificationsCount } from '../../api/hooks';
 import { useTranslation, useLocalizedDate } from '../../lib/i18n';
 
 const RISK_PROFILE_COLORS: Record<string, string> = {
@@ -48,6 +51,7 @@ const APP_VERSION = '1.0.0 (MVP)';
 
 export default function ProfileScreen() {
   const { user: profile, isLoading, logout } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const { formatMonthYear, formatDateTime } = useLocalizedDate();
@@ -67,6 +71,7 @@ export default function ProfileScreen() {
   
   const changePasswordMutation = useChangePassword();
   const updateLanguageMutation = useUpdateLanguage();
+  const { data: unreadCount } = useUnreadNotificationsCount();
 
   const resetPasswordForm = () => {
     setCurrentPassword('');
@@ -352,8 +357,8 @@ export default function ProfileScreen() {
             <MenuItem
               icon="notifications-outline"
               label={t('profile.notifications')}
-              isDisabled
-              onPress={() => handleComingSoon(t('profile.notifications'))}
+              onPress={() => navigation.navigate('Notifications')}
+              badge={unreadCount}
             />
             <LanguageMenuItem
               icon="language-outline"
@@ -379,7 +384,7 @@ export default function ProfileScreen() {
             <MenuItem
               icon="shield-outline"
               label={t('profile.privacyPolicy')}
-              onPress={handleContactSupport}
+              onPress={() => navigation.navigate('PrivacyPolicy')}
             />
             <MenuItem
               icon="document-text-outline"
@@ -628,9 +633,10 @@ interface MenuItemProps {
   label: string;
   isDisabled?: boolean;
   onPress: () => void;
+  badge?: number;
 }
 
-function MenuItem({ icon, label, isDisabled, onPress }: MenuItemProps) {
+function MenuItem({ icon, label, isDisabled, onPress, badge }: MenuItemProps) {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -648,7 +654,11 @@ function MenuItem({ icon, label, isDisabled, onPress }: MenuItemProps) {
           <Text color={isDisabled ? colors.textMuted : 'white'}>
             {label}
           </Text>
-          {isDisabled && (
+          {badge && badge > 0 ? (
+            <Badge size="sm" bg={colors.error} borderRadius="$full" ml="$2">
+              <BadgeText color="white" size="xs">{badge > 99 ? '99+' : badge}</BadgeText>
+            </Badge>
+          ) : isDisabled && (
             <Badge size="sm" bg={colors.surfaceHighlight} borderRadius="$full">
               <BadgeText color={colors.textMuted} size="xs">Coming Soon</BadgeText>
             </Badge>
