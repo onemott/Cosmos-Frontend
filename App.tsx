@@ -16,6 +16,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BrandingProvider } from './src/contexts/BrandingContext';
 // 引入用户认证上下文提供者，管理登录状态及相关逻辑
 import { AuthProvider } from './src/contexts/AuthContext';
+// 引入聊天上下文提供者
+import { ChatProvider } from './src/contexts/ChatContext';
 // 引入购物车上下文提供者，管理购物车数据与操作
 import { CartProvider } from './src/contexts/CartContext';
 // 引入多语言上下文提供者，提供国际化支持
@@ -63,13 +65,15 @@ export default function App() {
             <BrandingProvider>
               {/* AuthProvider：提供用户认证状态与登录/登出方法，子组件可监听或调用 */}
               <AuthProvider>
-                {/* CartProvider：提供购物车数据与操作方法，子组件可读取或修改购物车 */}
-                <CartProvider>
-                  {/* RootNavigator：应用主导航，渲染所有页面及路由逻辑 */}
-                  <RootNavigator />
-                  {/* 隐私政策同意模态框：确保用户同意隐私政策后才能继续使用 */}
-                  <PrivacyModal />
-                </CartProvider>
+                <ChatProvider>
+                  {/* CartProvider：提供购物车数据与操作方法，子组件可读取或修改购物车 */}
+                  <CartProvider>
+                    {/* RootNavigator：应用主导航，渲染所有页面及路由逻辑 */}
+                    <RootNavigator />
+                    {/* 隐私政策同意模态框：确保用户同意隐私政策后才能继续使用 */}
+                    <PrivacyModal />
+                  </CartProvider>
+                </ChatProvider>
               </AuthProvider>
             </BrandingProvider>
           </LanguageProvider>

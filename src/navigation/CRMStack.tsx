@@ -1,6 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import CRMScreen from '../screens/crm/CRMScreen';
+import ChatListScreen from '../screens/chat/ChatListScreen';
+import ChatDetailScreen from '../screens/chat/ChatDetailScreen';
 import { useTranslation } from '../lib/i18n';
 import type { CRMStackParamList } from './types';
 import { colors } from '../config/theme';
@@ -27,6 +29,16 @@ export default function CRMStack() {
         name="CRMHome"
         component={CRMScreen}
         options={{ title: t('navigation.myHub') }}
+      />
+      <Stack.Screen
+        name="ChatList"
+        component={ChatListScreen}
+        options={{ title: 'Messages' }}
+      />
+      <Stack.Screen
+        name="ChatDetail"
+        component={ChatDetailScreen}
+        options={{ title: 'Chat' }}
       />
     </Stack.Navigator>
   );

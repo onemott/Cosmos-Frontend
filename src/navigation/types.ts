@@ -32,6 +32,8 @@ export type LabStackParamList = {
 
 export type CRMStackParamList = {
   CRMHome: undefined;
+  ChatList: undefined;
+  ChatDetail: { sessionId: string; title: string };
 };
 
 export type ProfileStackParamList = {

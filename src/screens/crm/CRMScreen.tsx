@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Box, HStack, Text } from '@gluestack-ui/themed';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../config/theme';
 import { useTranslation } from '../../lib/i18n';
+import { useChat } from '../../contexts/ChatContext';
 import DocumentsSection from './sections/DocumentsSection';
 import TasksSection from './sections/TasksSection';
 import CalendarSection from './sections/CalendarSection';
@@ -14,6 +17,39 @@ type CRMTab = 'documents' | 'tasks' | 'calendar' | 'meetings' | 'services';
 export default function CRMScreen() {
   const [activeTab, setActiveTab] = useState<CRMTab>('tasks');
   const { t } = useTranslation();
+  const navigation = useNavigation();
+  const { totalUnread } = useChat();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity 
+          // @ts-ignore
+          onPress={() => navigation.navigate('ChatList')}
+          style={{ marginRight: 0 }}
+        >
+          <View>
+            <Ionicons name="chatbubble-ellipses-outline" size={24} color="white" />
+            {totalUnread > 0 && (
+              <View style={{
+                position: 'absolute',
+                top: -4,
+                right: -4,
+                backgroundColor: 'red',
+                borderRadius: 10,
+                width: 16,
+                height: 16,
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}>
+                <Text color="white" size="xs" style={{ fontSize: 10, lineHeight: 12 }}>{totalUnread}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, totalUnread]);
 
   const TABS: { key: CRMTab; label: string }[] = [
     { key: 'documents', label: t('crm.tabs.documents') },

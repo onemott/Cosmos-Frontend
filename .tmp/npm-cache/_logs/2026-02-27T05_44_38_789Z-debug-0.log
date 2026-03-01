@@ -1,0 +1,24 @@
+0 verbose cli D:\UniSoftware\nvm\nodejs\node.exe D:\UniSoftware\nvm\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v22.17.1
+3 silly config load:file:D:\UniSoftware\nvm\v22.17.1\node_modules\npm\npmrc
+4 silly config load:file:D:\Desktop\Cosmos\Cosmos-Frontend\.npmrc
+5 silly config load:file:C:\Users\Kinda\.npmrc
+6 silly config load:file:D:\UniSoftware\nvm\nodejs\etc\npmrc
+7 verbose title npm run web
+8 verbose argv "run" "web" "--clear"
+9 verbose logfile logs-max:10 dir:D:\Desktop\Cosmos\Cosmos-Frontend\.tmp\npm-cache\_logs\2026-02-27T05_44_38_789Z-
+10 verbose logfile D:\Desktop\Cosmos\Cosmos-Frontend\.tmp\npm-cache\_logs\2026-02-27T05_44_38_789Z-debug-0.log
+11 silly logfile done cleaning log files
+12 http fetch GET 200 https://registry.npmjs.org/npm 1860ms
+13 verbose cwd D:\Desktop\Cosmos\Cosmos-Frontend
+14 verbose os Windows_NT 10.0.26200
+15 verbose node v22.17.1
+16 verbose npm  v10.9.2
+17 notice
+17 notice New [31mmajor[39m version of npm available! [31m10.9.2[39m -> [34m11.11.0[39m
+17 notice Changelog: [34mhttps://github.com/npm/cli/releases/tag/v11.11.0[39m
+17 notice To update run: [4mnpm install -g npm@11.11.0[24m
+17 notice  { force: true, [Symbol(proc-log.meta)]: true }
+18 verbose exit 1
+19 verbose code 1
