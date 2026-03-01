@@ -51,13 +51,13 @@ export default function CRMScreen() {
     });
   }, [navigation, totalUnread]);
 
-  const TABS: { key: CRMTab; label: string }[] = [
+  const TABS: { key: CRMTab; label: string }[] = React.useMemo(() => [
     { key: 'documents', label: t('crm.tabs.documents') },
     { key: 'tasks', label: t('crm.tabs.tasks') },
     { key: 'calendar', label: t('crm.tabs.calendar') },
     { key: 'meetings', label: t('crm.tabs.meetings') },
     { key: 'services', label: t('crm.tabs.services') },
-  ];
+  ], [t]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -94,9 +94,11 @@ export default function CRMScreen() {
               activeOpacity={0.7}
             >
               <Text
-                size="sm"
-                fontWeight={activeTab === tab.key ? '$semibold' : '$normal'}
+                size="xs"
+                fontWeight={activeTab === tab.key ? '$bold' : '$normal'}
                 color={activeTab === tab.key ? 'white' : colors.textSecondary}
+                numberOfLines={1}
+                ellipsizeMode="tail"
               >
                 {tab.label}
               </Text>
@@ -116,7 +118,7 @@ export default function CRMScreen() {
 const styles = StyleSheet.create({
   tab: {
     flex: 1,
-    paddingVertical: spacing.sm + 2,
+    paddingVertical: 10,
     alignItems: 'center',
     borderRadius: borderRadius.md,
   },

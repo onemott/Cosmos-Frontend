@@ -311,6 +311,54 @@ export const useDocuments = (documentType?: string) => {
   });
 };
 
+export const useUploadDocument = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (formData: FormData) => {
+      // Use fetch instead of Axios for FormData upload to avoid React Native specific issues
+      // with Content-Type header and boundary generation.
+      const token = await tokenStorage.getAccessToken();
+      const response = await fetch(`${apiClient.defaults.baseURL}/client/documents/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Let fetch set Content-Type automatically with boundary
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        // Try to parse error message
+        let errorMessage = 'Upload failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorMessage;
+        } catch (e) {
+          // Ignore JSON parse error
+        }
+        throw new Error(errorMessage);
+      }
+
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+    },
+  });
+};
+
+export const useDeleteDocument = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (documentId: string) => {
+      await apiClient.delete(`/client/documents/${documentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+    },
+  });
+};
+
 // Document Download Info
 export interface DocumentDownloadInfo {
   document_id: string;

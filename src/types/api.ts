@@ -168,6 +168,7 @@ export interface Document {
   mime_type: string;
   description?: string;
   created_at: string;
+  uploaded_by_id?: string | null;
 }
 
 // Tasks
