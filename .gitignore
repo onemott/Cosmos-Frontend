@@ -43,6 +43,7 @@ yarn-error.*
 
 # Temporary files
 .tmp/
+.tmp_profile/
 
 # IDE
 .idea/
